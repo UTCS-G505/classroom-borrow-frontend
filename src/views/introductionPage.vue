@@ -102,8 +102,12 @@
     }
 
     const router = useRouter();
-    function goToBorrowPage(){
-        router.push("/borrow");
+
+    function goToBorrowPage(roomId){
+        router.push({
+            path: "/borrow",
+            query: {roomId}
+        });
     }
     
 </script>
@@ -152,7 +156,7 @@
                 <p><strong>位置：</strong>{{ room.location }}</p>
                 <p><strong>設備：</strong>{{room.equipment}}</p>
                 <a :href="room.seatMap" download>下載教室座位表.pdf ⬇</a>
-                <button class="borrowBtn" @click="goToBorrowPage">我要借用</button>
+                <button class="borrowBtn" @click="goToBorrowPage(room.id)">我要借用</button>
             </div>
         </div>
 
