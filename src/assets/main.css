@@ -1,5 +1,6 @@
 html,
 body {
+  /* remove padding at the top of navbar */
   margin: 0;
   padding: 0;
 }
