@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      pnpm:
+        specifier: ^10.14.0
+        version: 10.14.0
       vue:
         specifier: ^3.5.17
         version: 3.5.17
@@ -1098,6 +1101,11 @@ packages:
   picomatch@4.0.3:
     resolution: {integrity: sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==}
     engines: {node: '>=12'}
+
+  pnpm@10.14.0:
+    resolution: {integrity: sha512-rSenlkG0nD5IGhaoBbqnGBegS74Go40X5g4urug/ahRsamiBJfV5LkjdW6MOfaUqXNpMOZK5zPMz+c4iOvhHSA==}
+    engines: {node: '>=18.12'}
+    hasBin: true
 
   postcss-selector-parser@6.1.2:
     resolution: {integrity: sha512-Q8qQfPiZ+THO/3ZrOrO0cJJKfpYCagtMUkXbnEfmgUjwXg6z/WBeOyS9APBBPCTSiDV+s4SwQGu8yFsiMRIudg==}
@@ -2351,6 +2359,8 @@ snapshots:
   picocolors@1.1.1: {}
 
   picomatch@4.0.3: {}
+
+  pnpm@10.14.0: {}
 
   postcss-selector-parser@6.1.2:
     dependencies:
