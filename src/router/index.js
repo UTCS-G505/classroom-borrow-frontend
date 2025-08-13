@@ -4,15 +4,15 @@ import BorrowRequestView from '../views/BorrowRequestView.vue'
 
 const routes = [
   {
-    path: '/borrow',   // 你的網址
+    path: '/borrow', // 你的網址
     name: 'BorrowRequest',
-    component: BorrowRequestView
-  }
+    component: BorrowRequestView,
+  },
 ]
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
 })
 
 export default router
