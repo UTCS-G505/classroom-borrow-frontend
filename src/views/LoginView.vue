@@ -1,23 +1,23 @@
 <script setup>
-import { ref } from 'vue';
+import { ref } from 'vue'
 
-const username = ref('');
-const password = ref('');
-const role = ref('');
-const errorMessage = ref('');
+const username = ref('')
+const password = ref('')
+const role = ref('')
+const errorMessage = ref('')
 
 const handleLogin = () => {
   if (!username.value || !password.value || !role.value) {
-    errorMessage.value = '請填寫所有欄位並選擇身份';
-    return;
+    errorMessage.value = '請填寫所有欄位並選擇身份'
+    return
   }
   if (username.value === 'admin' && password.value === '1234' && role.value === '管理員') {
-    alert('登入成功！');
-    errorMessage.value = '';
+    alert('登入成功！')
+    errorMessage.value = ''
   } else {
-    errorMessage.value = '帳號或密碼錯誤';
+    errorMessage.value = '帳號或密碼錯誤'
   }
-};
+}
 </script>
 
 <template>
@@ -28,9 +28,15 @@ const handleLogin = () => {
         <div class="form-group">
           <label class="label">選擇身分:</label>
           <div class="role-selection">
-            <button type="button" :class="{ active: role === '學生' }" @click="role = '學生'">學生</button>
-            <button type="button" :class="{ active: role === '教師' }" @click="role = '教師'">教師</button>
-            <button type="button" :class="{ active: role === '管理員' }" @click="role = '管理員'">管理員</button>
+            <button type="button" :class="{ active: role === '學生' }" @click="role = '學生'">
+              學生
+            </button>
+            <button type="button" :class="{ active: role === '教師' }" @click="role = '教師'">
+              教師
+            </button>
+            <button type="button" :class="{ active: role === '管理員' }" @click="role = '管理員'">
+              管理員
+            </button>
           </div>
         </div>
 
@@ -67,7 +73,7 @@ const handleLogin = () => {
   border-radius: 12px;
   background-color: white;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.08);
-  font-family: "Microsoft JhengHei", sans-serif;
+  font-family: 'Microsoft JhengHei', sans-serif;
 }
 
 /* 放大登入字體並置中 */
