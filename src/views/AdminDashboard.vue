@@ -2,8 +2,7 @@
     import {ref} from "vue";
 
     import BorrowReview from './BorrowReview.vue';
-    import AnnouncementManagement from './Announcement.vue';
-    
+    import AnnouncementManagement from './AnnouncementManagement.vue';
     import BlacklistPage from './BlacklistPage.vue';
 
     const links = [
