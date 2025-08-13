@@ -1,10 +1,13 @@
 <script setup>
-import { reactive } from 'vue'
+import { reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router' // 引入 useRoute
+
+const route = useRoute() // 獲取當前路由
 
 const form = reactive({
   eventName: '',
   peopleCount: '',
-  classroom: '',
+  classroom: '', // 教室名稱
   borrowType: '',
   date: '',
   startTime: '',
@@ -137,6 +140,14 @@ const submitForm = () => {
     errors[key] = ''
   })
 }
+
+// 在組件掛載時設置教室名稱
+onMounted(() => {
+  const roomId = route.query.roomId // 獲取 query 中的 roomId
+  if (roomId) {
+    form.classroom = roomId // 將 roomId 設置到 form.classroom
+  }
+})
 </script>
 
 <template>
@@ -180,15 +191,15 @@ const submitForm = () => {
           :style="{ color: form.classroom === '' ? '#6c6c6c' : '#000' }"
         >
           <option value="">請選擇教室</option>
-          <option value="G312 會議室">G312 會議室</option>
-          <option value="G313 普通教室">G313 普通教室</option>
-          <option value="G314 普通教室">G314 普通教室</option>
-          <option value="G315 電腦教室">G315 電腦教室</option>
-          <option value="G316 電腦教室">G316 電腦教室</option>
-          <option value="G501 會議室">G501 會議室</option>
-          <option value="G508 系圖書館">G508 系圖書館</option>
-          <option value="G509 IOS教室">G509 IOS教室</option>
-          <option value="G516 電腦教室">G516 電腦教室</option>
+          <option value="G312">G312 會議室</option>
+          <option value="G313">G313 普通教室</option>
+          <option value="G314">G314 普通教室</option>
+          <option value="G315">G315 電腦教室</option>
+          <option value="G316">G316 電腦教室</option>
+          <option value="G501">G501 會議室</option>
+          <option value="G508">G508 系圖書館</option>
+          <option value="G509">G509 IOS教室</option>
+          <option value="G516">G516 電腦教室</option>
         </select>
         <span class="error" v-if="errors.classroom">{{ errors.classroom }}</span>
       </div>
