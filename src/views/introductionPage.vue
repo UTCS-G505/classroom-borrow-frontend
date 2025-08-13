@@ -1,5 +1,6 @@
 <script setup>
     import {ref} from "vue";
+    import { useRouter } from "vue-router";
 
     // 可借用教室資料
     const classrooms = ref([
@@ -99,6 +100,11 @@
             target.scrollIntoView({behavior: "smooth"});
         }
     }
+
+    const router = useRouter();
+    function goToBorrowPage(){
+        router.push("/borrow");
+    }
     
 </script>
 
@@ -146,7 +152,7 @@
                 <p><strong>位置：</strong>{{ room.location }}</p>
                 <p><strong>設備：</strong>{{room.equipment}}</p>
                 <a :href="room.seatMap" download>下載教室座位表.pdf ⬇</a>
-                <button class="borrowBtn">我要借用</button>
+                <button class="borrowBtn" @click="goToBorrowPage">我要借用</button>
             </div>
         </div>
 
