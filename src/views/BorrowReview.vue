@@ -1,11 +1,11 @@
 <script setup>
-
+import {ref} from "vue";
 </script>
 
 
 
 <template>
-  <RouterView />
+<h1>審核頁面</h1>
 </template>
 
 
