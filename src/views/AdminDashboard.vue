@@ -2,7 +2,7 @@
     import {ref} from "vue";
 
     import BorrowReview from './BorrowReview.vue';
-    import Announcement from './Announcement.vue';
+    import AnnouncementManagement from './Announcement.vue';
     import BlacklistPage from './BlacklistPage.vue';
 
     const links = [
@@ -44,7 +44,7 @@
         <!-- 主內容區 -->
         <section class="content">
             <BorrowReview v-if="page === 'borrow-review'" />
-            <Announcement v-else-if="page === 'announcement'" />
+            <AnnouncementManagement v-else-if="page === 'announcement'" />
             <BlacklistPage v-else-if="page === 'blacklist-management'" />
         </section>
     </div>
