@@ -501,7 +501,7 @@ body {
 }
 .form-container {
   margin: auto;
-  margin-top: 180px;
+  margin-top: 60px;
   background-color: #ffffff;
   border: 1px solid #eee;
   border-radius: 20px;
