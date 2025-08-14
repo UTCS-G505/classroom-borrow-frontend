@@ -4,11 +4,16 @@ import { useRoute } from 'vue-router' // 引入 useRoute
 
 const route = useRoute() // 獲取當前路由
 
+const result = reactive({})
+
 const form = reactive({
   eventName: '',
   peopleCount: '',
   classroom: '', // 教室名稱
   borrowType: '',
+  repeatType: '', //多次借用的頻率選擇
+  multiStartDate: '', //多次借用的起始日期
+  multiEndDate: '', //多次借用的結束日期
   date: '',
   startTime: '',
   endTime: '',
@@ -28,6 +33,9 @@ const errors = reactive({
   peopleCount: '',
   classroom: '',
   borrowType: '',
+  repeatType: '',
+  multiStartDate: '',
+  multiEndDate: '',
   date: '',
   startTime: '',
   endTime: '',
@@ -48,7 +56,7 @@ const validateEmail = (email) => {
 }
 
 const validatePhone = (phone) => {
-  const phoneRegex = /^\d{10}$/
+  const phoneRegex = /^[0-9\-() ]+$/ // 數字 、 - 、 () 和空格的正則表達式
   return phoneRegex.test(phone)
 }
 
@@ -59,29 +67,60 @@ const is_num = (value) => {
 }
 
 const validateField = (field) => {
+  // 清除當前欄位的錯誤訊息
+  errors[field] = ''
+
   if (!form[field]) {
-    errors[field] = '此欄位必填'
-    return false
+    if (form.borrowType == '單次借用' && (field === 'multiStartDate' || field === 'multiEndDate')) {
+      return true // 單次借用不需要多次借用的日期
+    } else if (
+      form.borrowType == '多次借用' &&
+      (field === 'date' || field === 'startTime' || field === 'endTime')
+    ) {
+      return true // 多次借用不需要單次借用的日期
+    } else {
+      errors[field] = '此欄位必填'
+      return false
+    }
   }
 
-  // 活動人數為負數就不能送出，要求改為正整數，輸入的只能是正數，其他視作沒輸入
+  // 活動人數必須為正整數
   if (field === 'peopleCount') {
-    if (!is_num(form[field])) {
-      errors[field] = '請輸入正整數'
+    if (!is_num(form[field]) || parseInt(form[field]) <= 0) {
+      errors[field] = '活動人數必須為正整數'
       return false
     }
   }
 
-  // 日期要大於等於今天
-  if (field === 'date') {
-    const today = new Date().toISOString().split('T')[0]
-    if (form.date < today) {
-      errors[field] = '日期必須大於等於今天'
+  // Email 格式判斷
+  if (field === 'borrowerEmail' || field === 'teacherEmail') {
+    if (!validateEmail(form[field])) {
+      errors[field] = 'Email 格式不正確'
       return false
     }
   }
 
-  // 時間的開始時間必須早於結束時間，修改其中一個時間時都要檢查
+  // 電話格式判斷
+  if (field === 'borrowerPhone' || field === 'teacherPhone') {
+    if (!validatePhone(form[field])) {
+      errors[field] = '電話格式不正確，請輸入有效的電話號碼'
+      return false
+    }
+  }
+
+  //日期判斷:今天以前的日期都設為不能選取
+  if (field === 'date' || field === 'multiStartDate' || field === 'multiEndDate') {
+    const today = new Date()
+    const inputDate = new Date(form[field])
+
+    // 檢查日期是否在今天之前
+    if (inputDate < today) {
+      errors[field] = '日期不能小於等於今天'
+      return false
+    }
+  }
+
+  // 時間的開始時間必須早於結束時間
   if (field === 'startTime' || field === 'endTime') {
     errors.startTime = '' // 清除開始時間的錯誤訊息
     errors.endTime = '' // 清除結束時間的錯誤訊息
@@ -93,16 +132,14 @@ const validateField = (field) => {
     }
   }
 
-  if (field === 'borrowerEmail' || field === 'teacherEmail') {
-    if (!validateEmail(form[field])) {
-      errors[field] = 'Email 格式不正確'
-      return false
-    }
-  }
+  // 多次借用的起始日期和結束日期判斷
+  if (field === 'multiStartDate' || field === 'multiEndDate') {
+    errors.multiStartDate = '' // 清除起始日期的錯誤訊息
+    errors.multiEndDate = '' // 清除結束日期的錯誤訊息
 
-  if (field === 'borrowerPhone' || field === 'teacherPhone') {
-    if (!validatePhone(form[field])) {
-      errors[field] = '電話格式不正確，須為10位數字'
+    if (form.multiStartDate && form.multiEndDate && form.multiStartDate >= form.multiEndDate) {
+      errors.multiStartDate = '起始日期必須早於結束日期'
+      errors.multiEndDate = '結束日期必須晚於起始日期'
       return false
     }
   }
@@ -114,7 +151,8 @@ const validateField = (field) => {
 const validateAllFields = () => {
   let isValid = true
   Object.keys(form).forEach((field) => {
-    if (!validateField(field)) {
+    const fieldValid = validateField(field)
+    if (!fieldValid) {
       isValid = false
     }
   })
@@ -127,7 +165,11 @@ const submitForm = () => {
     return
   }
 
-  console.log('送出資料：', form)
+  Object.keys(form).forEach((key) => {
+    result[key] = form[key] // 將表單資料複製到 result
+  })
+
+  console.log('送出資料：', result)
   alert('表單已送出！')
 
   // 清空表單資料
@@ -229,9 +271,49 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- 顯示多次借用的額外選項 -->
+    <div v-if="form.borrowType === '多次借用'" class="row">
+      <div class="field">
+        <label>頻率</label>
+        <select
+          v-model="form.repeatType"
+          @change="() => validateField('repeatType')"
+          :style="{ color: form.repeatType === '' ? '#6c6c6c' : '#000' }"
+        >
+          <option value="">請選擇頻率</option>
+          <option value="每天">每天</option>
+          <option value="每周">每周</option>
+        </select>
+        <span class="error" v-if="errors.repeatType">{{ errors.repeatType }}</span>
+      </div>
+
+      <div class="field">
+        <label>起始日期</label>
+        <input
+          type="date"
+          v-model="form.multiStartDate"
+          @input="() => validateField('multiStartDate')"
+          :style="{ color: form.multiStartDate === '' ? '#6c6c6c' : '#000' }"
+        />
+        <span class="error" v-if="errors.multiStartDate">{{ errors.multiStartDate }}</span>
+      </div>
+
+      <div class="field">
+        <label>結束日期</label>
+        <input
+          type="date"
+          v-model="form.multiEndDate"
+          @input="() => validateField('multiEndDate')"
+          :style="{ color: form.multiEndDate === '' ? '#6c6c6c' : '#000' }"
+        />
+        <span class="error" v-if="errors.multiEndDate">{{ errors.multiEndDate }}</span>
+      </div>
+    </div>
+
     <!-- 日期 & 時間 -->
     <div class="row">
-      <div class="field">
+      <!-- 單次借用時顯示選擇日期 -->
+      <div class="field" v-if="form.borrowType !== '多次借用'">
         <label>選擇日期</label>
         <input
           type="date"
@@ -241,24 +323,56 @@ onMounted(() => {
         />
         <span class="error" v-if="errors.date">{{ errors.date }}</span>
       </div>
+
+      <!-- 活動時間 -->
       <div class="field">
         <label>活動時間(起)</label>
-        <input
-          type="time"
+        <select
           v-model="form.startTime"
+          @change="() => validateField('startTime')"
           :style="{ color: form.startTime === '' ? '#6c6c6c' : '#000' }"
-          @input="() => validateField('startTime')"
-        />
+        >
+          <option value="">請選取活動開始時段</option>
+          <option value="0810-0900">第 1 節 0810-0900</option>
+          <option value="0910-1000">第 2 節 0910-1000</option>
+          <option value="1010-1100">第 3 節 1010-1100</option>
+          <option value="1110-1200">第 4 節 1110-1200</option>
+          <option value="1210-1300">第 5 節 1210-1300</option>
+          <option value="1310-1400">第 6 節 1310-1400</option>
+          <option value="1410-1500">第 7 節 1410-1500</option>
+          <option value="1510-1600">第 8 節 1510-1600</option>
+          <option value="1610-1700">第 9 節 1610-1700</option>
+          <option value="1710-1800">第 10 節 1710-1800</option>
+          <option value="1810-1900">第 11 節 1810-1900</option>
+          <option value="1910-2000">第 12 節 1910-2000</option>
+          <option value="2010-2100">第 13 節 2010-2100</option>
+          <option value="2110-2200">第 14 節 2110-2200</option>
+        </select>
         <span class="error" v-if="errors.startTime">{{ errors.startTime }}</span>
       </div>
       <div class="field">
         <label>活動時間(迄)</label>
-        <input
-          type="time"
+        <select
           v-model="form.endTime"
+          @change="() => validateField('endTime')"
           :style="{ color: form.endTime === '' ? '#6c6c6c' : '#000' }"
-          @input="() => validateField('endTime')"
-        />
+        >
+          <option value="">請選取活動結束時段</option>
+          <option value="0810-0900">第 1 節 0810-0900</option>
+          <option value="0910-1000">第 2 節 0910-1000</option>
+          <option value="1010-1100">第 3 節 1010-1100</option>
+          <option value="1110-1200">第 4 節 1110-1200</option>
+          <option value="1210-1300">第 5 節 1210-1300</option>
+          <option value="1310-1400">第 6 節 1310-1400</option>
+          <option value="1410-1500">第 7 節 1410-1500</option>
+          <option value="1510-1600">第 8 節 1510-1600</option>
+          <option value="1610-1700">第 9 節 1610-1700</option>
+          <option value="1710-1800">第 10 節 1710-1800</option>
+          <option value="1810-1900">第 11 節 1810-1900</option>
+          <option value="1910-2000">第 12 節 1910-2000</option>
+          <option value="2010-2100">第 13 節 2010-2100</option>
+          <option value="2110-2200">第 14 節 2110-2200</option>
+        </select>
         <span class="error" v-if="errors.endTime">{{ errors.endTime }}</span>
       </div>
     </div>
@@ -482,6 +596,7 @@ button {
 button:hover {
   background-color: #a7c5eb;
 }
+
 /* 手機板樣式 */
 @media (max-width: 768px) {
   .form-container,
