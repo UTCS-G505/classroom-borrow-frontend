@@ -13,14 +13,14 @@
 
 <style scoped>
 footer {
-  background-color: #f9f9f9;
+  background-color: #f6f6f5;
   padding: 1rem 0;
 }
 
 footer p {
   margin: 0;
   color: #6b7280; /* 灰色字 */
-  font-size: 0.875rem; /* text-sm */
+  font-size: 14px;
   text-align: center;
 }
 </style>
