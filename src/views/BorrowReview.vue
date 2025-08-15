@@ -30,14 +30,14 @@ const applications = ref([
 ]);
 
 //核准
-function approve(index){
-    applications.value[index].status = "已核准";
-}
+// function approve(index){
+//     applications.value[index].status = "已核准";
+// }
 
 //加入黑名單
-function blacklist(index){
-    applications.value[index].status = "黑名單";
-}
+// function blacklist(index){
+//     applications.value[index].status = "黑名單";
+// }
 
 //動態計算統計數據
 const stats = computed(()=>{
