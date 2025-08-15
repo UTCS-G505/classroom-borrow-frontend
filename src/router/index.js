@@ -2,8 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import BorrowRequestView from '../views/BorrowRequestView.vue'
 import introductionPage from '../views/introductionPage.vue'
-import AdminDashboard from '../views/AdminDashboard.vue'
-
 
 const routes = [
   {
@@ -15,11 +13,6 @@ const routes = [
     path: '/introduction',   // 你的網址
     name: 'introductionPage',
     component: introductionPage
-  },
-  {
-    path: '/admin', // 你的網址
-    name: 'AdminDashboard',
-    component: AdminDashboard,
   }
 ]
 
