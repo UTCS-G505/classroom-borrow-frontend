@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import BorrowRequestView from '../views/BorrowRequestView.vue'
-// import introductionPage from '../views/introductionPage.vue'
+import introductionPage from '../views/introductionPage.vue'
 
 const routes = [
   {
@@ -9,11 +9,11 @@ const routes = [
     name: 'BorrowRequest',
     component: BorrowRequestView,
   },
-  // {
-  //   path: '/introduction',   // 你的網址
-  //   name: 'introductionPage',
-  //   component: introductionPage
-  // }
+  {
+    path: '/introduction',   // 你的網址
+    name: 'introductionPage',
+    component: introductionPage
+  }
 ]
 
 const router = createRouter({
