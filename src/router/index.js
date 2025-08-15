@@ -1,23 +1,33 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+
+import BorrowRequestView from '../views/BorrowRequestView.vue'
+// import introductionPage from '../views/introductionPage.vue'
+
+const routes = [
+  {
+    path: '/borrow', // 你的網址
+    name: 'BorrowRequest',
+    component: BorrowRequestView,
+  },
+  // {
+  //   path: '/introduction',   // 你的網址
+  //   name: 'introductionPage',
+  //   component: introductionPage
+  // }
+]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-    },
-    {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
-    },
-  ],
+  history: createWebHistory(),
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    // 如果有保存的位置（例如返回上一頁），滾動到保存的位置
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      // 否則滾動到頁面頂部
+      return { top: 0 }
+    }
+  },
 })
 
 export default router
