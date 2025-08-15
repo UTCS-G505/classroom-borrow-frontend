@@ -29,28 +29,37 @@ const applications = ref([
     },
 ]);
 
-//核准
-// function approve(index){
-//     applications.value[index].status = "已核准";
-// }
+// ---------- 核准申請 ----------
+// 將申請狀態改為 "已核准"
+function approve(index){
+    applications.value[index].status = "已核准";
+}
 
-//加入黑名單
-// function blacklist(index){
-//     applications.value[index].status = "黑名單";
-// }
+// ---------- 加入黑名單 ----------
+// 將申請狀態改為 "黑名單"
+function blacklist(index){
+    applications.value[index].status = "黑名單";
+}
 
-//動態計算統計數據
+// ---------- 駁回申請 ----------
+// 將申請狀態改為 "駁回"
+function denied(index){
+    applications.value[index].status = "駁回";
+}
+
+// ---------- 統計資料 ----------
+// 動態計算總申請數、審核中數量、已核准數量
 const stats = computed(()=>{
-    const total = applications.value.length;
-    const pending = applications.value.filter(item => item.status == "審核中").length;
-    const approved = applications.value.filter(item => item.status == "已核准").length;
+    const total = applications.value.length;    //總申請數
+    const pending = applications.value.filter(item => item.status == "審核中").length;  //審核中數量
+    const approved = applications.value.filter(item => item.status == "已核准").length; //已審核數量
     return {total, pending, approved};
 });
 
 </script>
 
 <template>
-    <!-- 當日的借用統計 -->
+    <!-- ---------- 當日借用統計 ---------- -->
     <section class="stats">
         <h3>今日借用統計</h3>
         <p>
@@ -59,11 +68,50 @@ const stats = computed(()=>{
             已核准：{{stats.approved}}
         </p>
     </section>
+
+    <!-- ---------- 待審核申請列表 ---------- -->
+    <section class="review">
+        <h3>待審核申請</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>申請人</th>
+                    <th>教室</th>
+                    <th>時間</th>
+                    <th>用途</th>
+                    <th>狀態</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <!-- 逐筆顯示申請資料 -->
+                <tr v-for="(item,index) in applications" :key="index">
+                    <td>{{ item.applicant }}</td>
+                    <td>{{ item.classroom }}</td>
+                    <td>{{ item.date }} {{ item.startTime }} - {{ item.endTime }}</td>
+                    <td><button class="purpose">詳細資訊</button></td>
+                    <td>
+                        <!-- 顯示當前狀態 -->
+                        <span>{{ item.status }}</span>  
+                    </td>
+                    <td>
+                        <!-- 操作按鈕 -->
+                        <button class="approve" @click="approve(index)">核准</button>
+                        <button class="denied" @click="denied(index)">駁回</button>
+                        <button class="blacklist" @click="blacklist(index)">加入黑名單</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+
 </template>
 
 
 <style scoped>
-    .stats{
+    .stats, .review{
         background-color: #fff;
         padding: 20px;
         border-radius: 5px;
@@ -71,7 +119,61 @@ const stats = computed(()=>{
         margin-bottom: 20px;
     }
 
-    .stats h3{
+    h3{
         margin-bottom: 15px;
     }
+
+    table{
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    thead{
+        background-color: #e6e6e6;
+    }
+
+    th,td{
+        border: solid 1px #ddd;
+        padding: 8px;
+        text-align: center;
+    }
+
+    /* ---------- 狀態標籤樣式 ---------- */
+    .status{
+        padding: 2px 8px;
+        border-radius: 4px;
+        color: #333;
+    }
+
+    /* ---------- 按鈕樣式 ---------- */
+    button{
+        padding: 5px 8px;
+        border: none;
+        border-radius: 4px;
+        color: #fff;
+        cursor: pointer;
+        margin-right: 5px;
+    }
+
+    /* 核准按鈕 */
+    .approve{
+        background-color: #3D87E5;
+    }
+
+    /* 駁回按鈕 */
+    .denied{
+        background-color: #E54C4F;
+    }
+
+    /* 黑名單按鈕 */
+    .blacklist{
+        background-color: #444;
+    }
+
+    /* 用途按鈕 */
+    .purpose{
+        background-color: #DCDDDF;
+        color: #666;
+    }
+
 </style>
