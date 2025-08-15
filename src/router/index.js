@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import BorrowRequestView from '../views/BorrowRequestView.vue'
 import introductionPage from '../views/introductionPage.vue'
+import HomePage from '../views/HomePage.vue'
 
 const routes = [
   {
@@ -13,6 +14,11 @@ const routes = [
     path: '/introduction',   // 你的網址
     name: 'introductionPage',
     component: introductionPage
+  },
+  {
+    path: '/home',   // 你的網址
+    name: 'HomePage',
+    component: HomePage
   }
 ]
 

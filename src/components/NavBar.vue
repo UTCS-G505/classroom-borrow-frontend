@@ -3,7 +3,7 @@ import { RouterLink } from 'vue-router'
 import { ref, watch, onUnmounted, onMounted } from 'vue'
 
 const links = [
-  { to: '/', label: '首頁' },
+  { to: '/home', label: '首頁' },
   { to: '/borrow_status', label: '教室借用情況' },
   { to: '/introduction', label: '教室介紹' },
   { to: '/borrow', label: '申請借用' },
