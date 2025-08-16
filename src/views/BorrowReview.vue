@@ -63,18 +63,6 @@ function approve(index) {
   applications.value[index].reason = ''
 }
 
-// ---------- 加入黑名單 ----------
-// 將申請狀態改為 "黑名單"
-function blacklist(index) {
-  applications.value[index].status = '黑名單'
-}
-
-// ---------- 駁回申請 ----------
-// 將申請狀態改為 "駁回"
-function denied(index) {
-  applications.value[index].status = '駁回'
-}
-
 // ---------- 統計資料 ----------
 // 動態計算總申請數、審核中數量、已核准數量
 const stats = computed(() => {
