@@ -16,6 +16,11 @@ const routes = [
     name: 'introductionPage',
     component: introductionPage,
   },
+  {
+    path: '/admin', // 你的網址
+    name: 'AdminDashboard',
+    component: AdminDashboard,
+  }
 ]
 
 const router = createRouter({
