@@ -71,7 +71,10 @@ const validateField = (field) => {
   errors[field] = ''
 
   if (!form[field]) {
-    if (form.borrowType == '單次借用' && (field === 'multiStartDate' || field === 'multiEndDate')) {
+    if (
+      form.borrowType == '單次借用' &&
+      (field === 'multiStartDate' || field === 'multiEndDate' || field == 'repeatType')
+    ) {
       return true // 單次借用不需要多次借用的日期
     } else if (
       form.borrowType == '多次借用' &&
