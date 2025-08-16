@@ -1,14 +1,7 @@
-<script setup>
-</script>
-
-
+<script setup></script>
 
 <template>
-<h1>公告管理頁面</h1>
+  <h1>公告管理頁面</h1>
 </template>
 
-
-
-<style scoped>
-  
-</style>
+<style scoped></style>

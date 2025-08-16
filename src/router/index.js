@@ -4,7 +4,6 @@ import BorrowRequestView from '../views/BorrowRequestView.vue'
 import introductionPage from '../views/introductionPage.vue'
 import AdminDashboard from '../views/AdminDashboard.vue'
 
-
 const routes = [
   {
     path: '/borrow', // 你的網址
@@ -20,7 +19,7 @@ const routes = [
     path: '/admin', // 你的網址
     name: 'AdminDashboard',
     component: AdminDashboard,
-  }
+  },
 ]
 
 const router = createRouter({
