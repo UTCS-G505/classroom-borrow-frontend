@@ -12,15 +12,10 @@ const routes = [
     component: BorrowRequestView,
   },
   {
-    path: '/introduction',   // 你的網址
+    path: '/introduction', // 你的網址
     name: 'introductionPage',
-    component: introductionPage
+    component: introductionPage,
   },
-  {
-    path: '/admin', // 你的網址
-    name: 'AdminDashboard',
-    component: AdminDashboard,
-  }
 ]
 
 const router = createRouter({
