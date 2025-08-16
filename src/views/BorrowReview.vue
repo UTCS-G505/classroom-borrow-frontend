@@ -10,6 +10,7 @@ const applications = ref([
     startTime: '12:00',
     endTime: '15:00',
     status: '審核中',
+    reason: '',
   },
   {
     applicant: '陳XX',
@@ -18,6 +19,7 @@ const applications = ref([
     startTime: '10:00',
     endTime: '12:00',
     status: '審核中',
+    reason: '',
   },
   {
     applicant: '張XX',
@@ -26,13 +28,39 @@ const applications = ref([
     startTime: '14:00',
     endTime: '15:00',
     status: '審核中',
+    reason: '',
   },
 ])
+
+// ---------- 彈窗控制區 ----------
+const showModal = ref(false) // 控制彈窗是否顯示
+const currentAction = ref('') //denied或blacklist
+const currentIndex = ref(null)
+const inputReason = ref('') // 使用者輸入的理由
+
+// 打開彈窗，傳入動作和申請索引
+function openModal(action, index) {
+  currentAction.value = action
+  currentIndex.value = index
+  inputReason.value = '' //清空輸入框
+  showModal.value = true
+}
+
+// 按下確認 → 更新申請的狀態與理由
+function submitReason() {
+  if (currentIndex.value !== null) {
+    const app = applications.value[currentIndex.value]
+    app.status = currentAction.value === 'denied' ? '駁回' : '黑名單'
+    app.reason = inputReason.value // 紀錄理由
+  }
+  showModal.value = false // 關閉視窗
+}
 
 // ---------- 核准申請 ----------
 // 將申請狀態改為 "已核准"
 function approve(index) {
   applications.value[index].status = '已核准'
+  applications.value[index].reason = ''
 }
 
 // ---------- 加入黑名單 ----------
@@ -89,17 +117,36 @@ const stats = computed(() => {
           <td>
             <!-- 顯示當前狀態 -->
             <span>{{ item.status }}</span>
+            <!-- 若駁回或加入黑名單，顯示理由 -->
+            <div v-if="item.reason" class="showReason">備註：{{ item.reason }}</div>
           </td>
           <td>
             <!-- 操作按鈕 -->
             <button class="approve" @click="approve(index)">核准</button>
-            <button class="denied" @click="denied(index)">駁回</button>
-            <button class="blacklist" @click="blacklist(index)">加入黑名單</button>
+            <button class="denied" @click="openModal('denied', index)">駁回</button>
+            <button class="blacklist" @click="openModal('blacklist', index)">加入黑名單</button>
           </td>
         </tr>
       </tbody>
     </table>
   </section>
+
+  <!-- 駁回 / 黑名單理由彈窗 -->
+  <div v-if="showModal" class="modalOverlay">
+    <div class="modal">
+      <!-- 標題動態切換 -->
+      <h3>請填寫{{ currentAction == 'denied' ? '駁回理由' : '加入黑名單理由' }}</h3>
+
+      <!-- 理由輸入框 -->
+      <textarea v-model="inputReason" placeholder="請輸入..." rows="5"></textarea>
+
+      <!-- 彈窗按鈕區 -->
+      <div class="modalButtons">
+        <button @click="submitReason">確認</button>
+        <button @click="showModal = false">取消</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -141,7 +188,7 @@ td {
 
 /* ---------- 按鈕樣式 ---------- */
 button {
-  padding: 5px 8px;
+  padding: 8px 10px;
   border: none;
   border-radius: 4px;
   color: #fff;
@@ -168,5 +215,56 @@ button {
 .purpose {
   background-color: #dcdddf;
   color: #666;
+}
+
+/* ---------- 彈窗樣式 ---------- */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4); /* 半透明背景 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* 保證在最上層 */
+}
+
+.modal {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 100%;
+}
+
+/* 輸入框 */
+.modal textarea {
+  width: 100%;
+  margin-top: 10px;
+  padding: 5px;
+  resize: none;
+  font-size: 16px;
+  border: solid 1px #ccc;
+}
+
+/* 彈窗按鈕區 (彈性排版 + 間距) */
+.modalButtons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  gap: 10px;
+}
+
+.modalButtons button {
+  background-color: #dcdddf;
+  color: #666;
+}
+
+/* 理由文字 */
+.showReason {
+  font-size: 12px;
+  color: #999;
 }
 </style>
