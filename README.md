@@ -44,6 +44,12 @@ pnpm lint
 pnpm format
 ```
 
+### 測試 [Prettier](https://prettier.io/)
+
+```sh
+pnpm test:format
+```
+
 ## Commit 摘要規範
 
 摘要以不超過 50 個字元為原則。其格式應為

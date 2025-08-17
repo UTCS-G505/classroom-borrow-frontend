@@ -54,6 +54,9 @@ jobs:
 
       - name: Run ESLint
         run: pnpm lint
+      
+      - name: Run test Prettier
+        run: pnpm test:format
 
       - name: Run Build
         run: pnpm build
