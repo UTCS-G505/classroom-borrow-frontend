@@ -132,12 +132,12 @@
         
         <div class= "interval"></div>
 
-        <!-- 版權 -->
+        <!-- 版權 --
         <p class = "copyright" >
             © 2025 臺北市立大學 資訊科學系(含碩士班) 版權所有<br>
             Copyright © 2025 University of Taipei Department of Computer Scinece. All Rights Reverved.<br>
         </p>
-
+        -->
     </section>
 
 </template>

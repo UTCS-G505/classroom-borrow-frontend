@@ -15,6 +15,11 @@ const routes = [
     name: 'introductionPage',
     component: introductionPage,
   },
+  {
+    path: '/home', // 你的網址
+    name: 'HomePage',
+    component: HomePage,
+  },
 ]
 
 const router = createRouter({
