@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import BorrowReview from './BorrowReview.vue'
 import AnnouncementManagement from './AnnouncementManagement.vue'
@@ -17,6 +17,28 @@ const page = ref('borrow-review')
 //點擊導覽列，切換頁面
 function changePage(id) {
   page.value = id
+}
+
+//黑名單資料
+const blacklist = ref([])
+
+// 監聽變動 → 儲存到 localStorage
+watch(
+  blacklist,
+  (val) => {
+    localStorage.setItem('blacklist', JSON.stringify(val))
+  },
+  { deep: true },
+)
+
+//新增黑名單
+function handleAddBlacklit(entry) {
+  blacklist.value.push(entry)
+}
+
+//刪除黑名單
+function handleDeleteBlacklit(index) {
+  blacklist.value.splice(index, 1)
 }
 </script>
 
@@ -40,9 +62,13 @@ function changePage(id) {
 
     <!-- 主內容區 -->
     <section class="content">
-      <BorrowReview v-if="page === 'borrow-review'" />
+      <BorrowReview v-if="page === 'borrow-review'" @addBlacklist="handleAddBlacklit" />
       <AnnouncementManagement v-else-if="page === 'announcement'" />
-      <BlacklistPage v-else-if="page === 'blacklist-management'" />
+      <BlacklistPage
+        v-else-if="page === 'blacklist-management'"
+        :blacklist="blacklist"
+        @deleteBlacklist="handleDeleteBlacklit"
+      />
     </section>
   </div>
 </template>

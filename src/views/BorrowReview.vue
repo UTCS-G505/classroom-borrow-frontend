@@ -1,36 +1,56 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 
-//申請資料(先用假資料，到時候要改成從借用畫面那邊傳過來)
-const applications = ref([
-  {
-    applicant: '王XX',
-    classroom: 'G508',
-    date: '2025/07/30',
-    startTime: '12:00',
-    endTime: '15:00',
-    status: '審核中',
-    reason: '',
+const emit = defineEmits(['addBlacklist'])
+
+const applications = ref([])
+
+// 初始化：從 localStorage 載入
+onMounted(() => {
+  const saved = localStorage.getItem('applications')
+  if (saved) {
+    applications.value = JSON.parse(saved)
+  } else {
+    applications.value = [
+      {
+        applicant: '王XX',
+        classroom: 'G508',
+        date: '2025/07/30',
+        startTime: '12:00',
+        endTime: '15:00',
+        status: '審核中',
+        reason: '',
+      },
+      {
+        applicant: '陳XX',
+        classroom: 'G516',
+        date: '2025/07/31',
+        startTime: '10:00',
+        endTime: '12:00',
+        status: '審核中',
+        reason: '',
+      },
+      {
+        applicant: '張XX',
+        classroom: 'G316',
+        date: '2025/08/10',
+        startTime: '14:00',
+        endTime: '15:00',
+        status: '審核中',
+        reason: '',
+      },
+    ]
+  }
+})
+
+// 監聽 → 儲存
+watch(
+  applications,
+  (val) => {
+    localStorage.setItem('applications', JSON.stringify(val))
   },
-  {
-    applicant: '陳XX',
-    classroom: 'G516',
-    date: '2025/07/31',
-    startTime: '10:00',
-    endTime: '12:00',
-    status: '審核中',
-    reason: '',
-  },
-  {
-    applicant: '張XX',
-    classroom: 'G316',
-    date: '2025/08/10',
-    startTime: '14:00',
-    endTime: '15:00',
-    status: '審核中',
-    reason: '',
-  },
-])
+  { deep: true },
+)
 
 // ---------- 彈窗控制區 ----------
 const showModal = ref(false) // 控制彈窗是否顯示
@@ -52,6 +72,15 @@ function submitReason() {
     const app = applications.value[currentIndex.value]
     app.status = currentAction.value === 'denied' ? '駁回' : '黑名單'
     app.reason = inputReason.value // 紀錄理由
+
+    if (currentAction.value === 'blacklist') {
+      emit('addBlacklist', {
+        applicant: app.applicant,
+        classroom: app.classroom,
+        date: app.date,
+        reason: inputReason.value,
+      })
+    }
   }
   showModal.value = false // 關閉視窗
 }
@@ -63,11 +92,20 @@ function approve(index) {
   applications.value[index].reason = ''
 }
 
+// 區分待審核 / 已完成
+const pendingApplications = computed(() =>
+  applications.value.filter((item) => item.status === '審核中'),
+)
+
+const reviewedApplications = computed(() =>
+  applications.value.filter((item) => item.status !== '審核中'),
+)
+
 // ---------- 統計資料 ----------
 // 動態計算總申請數、審核中數量、已核准數量
 const stats = computed(() => {
   const total = applications.value.length //總申請數
-  const pending = applications.value.filter((item) => item.status == '審核中').length //審核中數量
+  const pending = pendingApplications.value.length //審核中數量
   const approved = applications.value.filter((item) => item.status == '已核准').length //已審核數量
   return { total, pending, approved }
 })
@@ -83,7 +121,7 @@ const stats = computed(() => {
   <!-- ---------- 待審核申請列表 ---------- -->
   <section class="review">
     <h3>待審核申請</h3>
-    <table>
+    <table v-if="pendingApplications.length">
       <thead>
         <tr>
           <th>申請人</th>
@@ -117,6 +155,33 @@ const stats = computed(() => {
         </tr>
       </tbody>
     </table>
+    <p v-else>目前沒有待審核的申請</p>
+  </section>
+
+  <!-- 已完成審核 -->
+  <section class="reviewed">
+    <h3>已完成審核</h3>
+    <table v-if="reviewedApplications.length">
+      <thead>
+        <tr>
+          <th>申請人</th>
+          <th>教室</th>
+          <th>時間</th>
+          <th>狀態</th>
+          <th>備註</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(item, index) in reviewedApplications" :key="index">
+          <td>{{ item.applicant }}</td>
+          <td>{{ item.classroom }}</td>
+          <td>{{ item.date }} {{ item.startTime }} - {{ item.endTime }}</td>
+          <td>{{ item.status }}</td>
+          <td>{{ item.reason || '-' }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <p v-else>目前沒有已完成審核的資料。</p>
   </section>
 
   <!-- 駁回 / 黑名單理由彈窗 -->
@@ -139,7 +204,8 @@ const stats = computed(() => {
 
 <style scoped>
 .stats,
-.review {
+.review,
+.reviewed {
   background-color: #fff;
   padding: 20px;
   border-radius: 5px;
