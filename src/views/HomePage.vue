@@ -60,6 +60,11 @@ const rules = ref([
   },
   {
     id: '8',
+    content: '須於使用日前至少一天完成借用申請。',
+    addition: ' ',
+  },
+  {
+    id: '9',
     content: '開始使用本系統視同同意以上事項。',
     addition: ' ',
   },
@@ -76,6 +81,7 @@ const router = useRouter()
 
 <template>
   <section class="introduction">
+    <!-- 標題 -->
     <div class="header">
       <div class="header1">臺北市立大學 資訊科學系</div>
       <div class="header2">教室借用系統</div>
@@ -134,13 +140,15 @@ const router = useRouter()
 }
 
 .header1 {
-  font-size: 40px;
+  font-size: clamp(14px, 6vw, 40px);
   color: #404040;
+  margin-top: 120px;
 }
 
-.header {
-  font-size: 60px;
+.header2 {
+  font-size: clamp(16px, 8vw, 60px);
   color: #333333;
+  margin-bottom: 80px;
 }
 
 .interval {
@@ -166,14 +174,15 @@ const router = useRouter()
 button {
   background-color: #c2ddff;
   border: none;
-  padding: 8px 16px;
+  padding: 12px 28px;
   border-radius: 25px;
   font-size: 16px;
   color: #555;
   font-weight: 500;
   cursor: pointer;
-  margin-left: 20px;
+  margin: 30px;
 }
+
 button:hover {
   background-color: #a7c5eb;
 }

@@ -16,8 +16,13 @@ const routes = [
     component: introductionPage,
   },
   {
-    path: '/home', // 你的網址
+    path: '/home', // 首頁
     name: 'HomePage',
+    component: HomePage,
+  },
+  {
+    path: '/', // 首頁(根目錄)
+    name: 'HomePage_root',
     component: HomePage,
   },
 ]
