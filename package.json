@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --fix",
-    "format": "prettier --write src/"
+    "format": "prettier --write src/",
+    "test:format": "prettier -c src/"
   },
   "dependencies": {
     "pnpm": "^10.14.0",

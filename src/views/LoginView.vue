@@ -42,7 +42,7 @@ const handleLogin = () => {
 
         <div class="form-group">
           <label class="label" for="username">帳號：</label>
-          <input type="text" id="username" v-model="username" placeholder="校務系統帳號" />
+          <input style = "color: #b0b0b0" type="text" id="username" v-model="username" placeholder="校務系統帳號" />
         </div>
 
         <div class="form-group">
@@ -63,12 +63,13 @@ const handleLogin = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh; /* 垂直置中 */
+  height: 80vh; /* 垂直置中 */
+  width: 100%; /* 水平置中 */
   background-color: #f2f2f2;
 }
 
 .login-container {
-  width: 420px;
+  width: 500px;
   padding: 30px 40px;
   border-radius: 12px;
   background-color: white;
@@ -127,6 +128,7 @@ input:focus {
   background-color: #f8f8f8;
   cursor: pointer;
   font-size: 16px;
+  color: #b0b0b0; /* 字體顏色改為淺灰色 */
 }
 
 .role-selection button:last-child {
@@ -161,4 +163,9 @@ input:focus {
   font-size: 15px;
   text-align: center;
 }
+
+input::placeholder {
+  color: #b0b0b0;
+}
+
 </style>
