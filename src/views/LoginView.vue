@@ -42,7 +42,13 @@ const handleLogin = () => {
 
         <div class="form-group">
           <label class="label" for="username">帳號：</label>
-          <input style = "color: #b0b0b0" type="text" id="username" v-model="username" placeholder="校務系統帳號" />
+          <input
+            style="color: #b0b0b0"
+            type="text"
+            id="username"
+            v-model="username"
+            placeholder="校務系統帳號"
+          />
         </div>
 
         <div class="form-group">
@@ -167,5 +173,4 @@ input:focus {
 input::placeholder {
   color: #b0b0b0;
 }
-
 </style>
