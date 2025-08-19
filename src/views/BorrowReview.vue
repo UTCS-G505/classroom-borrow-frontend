@@ -107,7 +107,9 @@ const stats = computed(() => {
   const total = applications.value.length //總申請數
   const pending = pendingApplications.value.length //審核中數量
   const approved = applications.value.filter((item) => item.status == '已核准').length //已審核數量
-  return { total, pending, approved }
+  const disallowed = applications.value.filter((item) => item.status == '駁回').length //駁回數量
+  const blacklist = applications.value.filter((item) => item.status == '黑名單').length //黑名單數量
+  return { total, pending, approved, disallowed, blacklist }
 })
 </script>
 
@@ -115,7 +117,28 @@ const stats = computed(() => {
   <!-- ---------- 當日借用統計 ---------- -->
   <section class="stats">
     <h3>今日借用統計</h3>
-    <p>總借用：{{ stats.total }} | 審核中：{{ stats.pending }} | 已核准：{{ stats.approved }}</p>
+
+    <div class="data">
+      <span
+        >總借用：<strong>{{ stats.total }}</strong></span
+      >
+      <span class="divider">|</span>
+      <span
+        >審核中：<strong>{{ stats.pending }}</strong></span
+      >
+      <span class="divider">|</span>
+      <span
+        >已核准：<strong>{{ stats.approved }}</strong></span
+      >
+      <span class="divider">|</span>
+      <span
+        >駁回：<strong>{{ stats.disallowed }}</strong></span
+      >
+      <span class="divider">|</span>
+      <span
+        >黑名單：<strong>{{ stats.blacklist }}</strong></span
+      >
+    </div>
   </section>
 
   <!-- ---------- 待審核申請列表 ---------- -->
@@ -211,6 +234,18 @@ const stats = computed(() => {
   border-radius: 5px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
+}
+
+.data {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.divider {
+  color: #ccc;
 }
 
 h3 {
