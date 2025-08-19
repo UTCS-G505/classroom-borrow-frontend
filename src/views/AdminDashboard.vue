@@ -32,12 +32,12 @@ watch(
 )
 
 //新增黑名單
-function handleAddBlacklit(entry) {
+function handleAddBlacklist(entry) {
   blacklist.value.push(entry)
 }
 
 //刪除黑名單
-function handleDeleteBlacklit(index) {
+function handleDeleteBlacklist(index) {
   blacklist.value.splice(index, 1)
 }
 </script>
@@ -62,12 +62,12 @@ function handleDeleteBlacklit(index) {
 
     <!-- 主內容區 -->
     <section class="content">
-      <BorrowReview v-if="page === 'borrow-review'" @addBlacklist="handleAddBlacklit" />
+      <BorrowReview v-if="page === 'borrow-review'" @addBlacklist="handleAddBlacklist" />
       <AnnouncementManagement v-else-if="page === 'announcement'" />
       <BlacklistPage
         v-else-if="page === 'blacklist-management'"
         :blacklist="blacklist"
-        @deleteBlacklist="handleDeleteBlacklit"
+        @deleteBlacklist="handleDeleteBlacklist"
       />
     </section>
   </div>
