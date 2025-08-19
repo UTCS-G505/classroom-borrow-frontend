@@ -4,3 +4,14 @@ body {
   margin: 0;
   padding: 0;
 }
+/* 用 flex 讓 footer 能自然推到底 */
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* 內容區塊撐開剩餘空間 */
+.main-content {
+  flex: 1;
+}
