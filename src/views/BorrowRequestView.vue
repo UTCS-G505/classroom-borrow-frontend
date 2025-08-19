@@ -1,8 +1,9 @@
 <script setup>
 import { reactive, onMounted } from 'vue'
-import { useRoute } from 'vue-router' // 引入 useRoute
+import { useRoute, useRouter } from 'vue-router' // 引入 useRoute
 
-const route = useRoute() // 獲取當前路由
+const route = useRoute() // 獲取當前路由->讀取資料
+const router = useRouter() // 獲取路由實例->導航跳轉
 
 const result = reactive({})
 
@@ -184,6 +185,55 @@ const submitForm = () => {
   Object.keys(errors).forEach((key) => {
     errors[key] = ''
   })
+  // 根據借用類型決定路由跳轉參數
+  if (result.borrowType === '多次借用') {
+    // 多次借用的路由跳轉
+    router.push({
+      path: '/record',
+      query: {
+        multiStartDate: result.multiStartDate,
+        multiEndDate: result.multiEndDate,
+        room: result.classroom,
+        startTime: result.startTime,
+        endTime: result.endTime,
+        eventName: result.eventName,
+        peopleCount: result.peopleCount,
+        borrowType: result.borrowType,
+        repeatType: result.repeatType,
+        description: result.description,
+        borrowerName: result.borrowerName,
+        teacherName: result.teacherName,
+        borrowerDepartment: result.borrowerDepartment,
+        teacherDepartment: result.teacherDepartment,
+        borrowerEmail: result.borrowerEmail,
+        teacherEmail: result.teacherEmail,
+        borrowerPhone: result.borrowerPhone,
+        teacherPhone: result.teacherPhone,
+      },
+    })
+  } else {
+    // 單次借用的路由跳轉
+    router.push({
+      path: '/record',
+      query: {
+        date: result.date,
+        room: result.classroom,
+        time: `${result.startTime.slice(0, 4)} - ${result.endTime.slice(5, 9)}`,
+        eventName: result.eventName,
+        peopleCount: result.peopleCount,
+        borrowType: result.borrowType,
+        description: result.description,
+        borrowerName: result.borrowerName,
+        teacherName: result.teacherName,
+        borrowerDepartment: result.borrowerDepartment,
+        teacherDepartment: result.teacherDepartment,
+        borrowerEmail: result.borrowerEmail,
+        teacherEmail: result.teacherEmail,
+        borrowerPhone: result.borrowerPhone,
+        teacherPhone: result.teacherPhone,
+      },
+    })
+  }
 }
 
 // 在組件掛載時設置教室名稱
