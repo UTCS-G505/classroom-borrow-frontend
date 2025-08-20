@@ -166,8 +166,6 @@ const stats = computed(() => {
           <td>
             <!-- 顯示當前狀態 -->
             <span>{{ item.status }}</span>
-            <!-- 若駁回或加入黑名單，顯示理由 -->
-            <div v-if="item.reason" class="showReason">備註：{{ item.reason }}</div>
           </td>
           <td>
             <!-- 操作按鈕 -->
@@ -349,11 +347,5 @@ button {
 .modalButtons button {
   background-color: #dcdddf;
   color: #666;
-}
-
-/* 理由文字 */
-.showReason {
-  font-size: 12px;
-  color: #999;
 }
 </style>
