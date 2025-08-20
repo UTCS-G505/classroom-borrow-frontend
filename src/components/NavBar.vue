@@ -1,6 +1,7 @@
 <script setup>
 import { RouterLink } from 'vue-router'
 import { ref, watch, onUnmounted, onMounted } from 'vue'
+import logo from '@/assets/logo.png'
 
 const links = [
   { to: '/home', label: '首頁' },
@@ -12,6 +13,7 @@ const links = [
 ]
 
 const isMobileMenuOpen = ref(false)
+const isScrolled = ref(false)
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
@@ -21,6 +23,10 @@ const closeMobileMenu = () => {
   isMobileMenuOpen.value = false
 }
 
+const handleScroll = () => {
+  isScrolled.value = window.scrollY > 10
+}
+
 // Lock body scroll while mobile menu open
 watch(isMobileMenuOpen, (val) => {
   if (typeof document !== 'undefined') {
@@ -28,26 +34,33 @@ watch(isMobileMenuOpen, (val) => {
   }
 })
 
-onUnmounted(() => {
-  if (typeof document !== 'undefined') {
-    document.body.style.overflow = ''
-  }
-})
-
-// Close on Escape key
 onMounted(() => {
-  const handler = (e) => {
+  // Close on Escape key
+  const escapeHandler = (e) => {
     if (e.key === 'Escape') closeMobileMenu()
   }
-  window.addEventListener('keydown', handler)
-  onUnmounted(() => window.removeEventListener('keydown', handler))
+  window.addEventListener('keydown', escapeHandler)
+
+  // Handle scroll for transparent background
+  window.addEventListener('scroll', handleScroll)
+
+  onUnmounted(() => {
+    window.removeEventListener('keydown', escapeHandler)
+    window.removeEventListener('scroll', handleScroll)
+    if (typeof document !== 'undefined') {
+      document.body.style.overflow = ''
+    }
+  })
 })
 </script>
 
 <template>
-  <nav class="navbar">
+  <nav class="navbar" :class="{ scrolled: isScrolled }">
     <div class="nav-brand">
-      <RouterLink to="/" class="brand-link">資訊科學系教室借用系統</RouterLink>
+      <RouterLink to="/" class="brand-link">
+        <img :src="logo" alt="Logo" class="logo" />
+        <span class="brand-text">資訊科學系教室借用系統</span>
+      </RouterLink>
     </div>
 
     <!-- Mobile menu button -->
@@ -82,24 +95,63 @@ onMounted(() => {
 
 <style scoped>
 .navbar {
-  --nav-bg: rgba(60, 60, 60, 0.75);
+  --nav-bg: rgba(255, 255, 255, 0.95);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 1.25rem;
   min-height: 65px;
-  background: var(--nav-bg);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  /* Background moved to ::before to avoid creating a containing block for
+     descendants with position: fixed when using filter/backdrop-filter */
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   margin: 0;
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+
+  /* transition remains for variable-based background via ::before */
+  transition: background-color 0.3s ease;
+}
+
+.navbar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--nav-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: -1; /* behind navbar content but within its stacking context */
+  transition:
+    background-color 0.3s ease,
+    backdrop-filter 0.3s ease;
+}
+
+.navbar.scrolled {
+  --nav-bg: rgba(255, 255, 255, 0.5);
 }
 
 .nav-brand .brand-link {
   font-weight: 600;
   font-size: 1.25rem;
   text-decoration: none;
-  color: #fff;
+  color: #333;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+.brand-text {
+  white-space: nowrap;
 }
 
 .nav-links {
@@ -114,7 +166,7 @@ onMounted(() => {
   text-decoration: none;
   padding: 0.35rem 0.65rem;
   border-radius: 4px;
-  color: #fff;
+  color: #333;
   font-weight: 500;
   font-size: 1.1rem;
   transition:
@@ -124,7 +176,7 @@ onMounted(() => {
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.08);
 }
 
 /* Mobile menu button */
@@ -144,7 +196,7 @@ onMounted(() => {
 .hamburger-line {
   width: 2rem;
   height: 0.25rem;
-  background: #fff;
+  background: #333;
   border-radius: 10px;
   transition: all 0.3s linear;
   position: relative;
@@ -170,6 +222,14 @@ onMounted(() => {
     display: flex;
   }
 
+  .logo {
+    height: 32px;
+  }
+
+  .brand-text {
+    font-size: 1rem;
+  }
+
   /* Full-screen overlay menu */
   .nav-links {
     position: fixed;
@@ -180,7 +240,7 @@ onMounted(() => {
     justify-content: center;
     gap: 0.75rem;
     margin: 0;
-    background: rgba(60, 60, 60, 0.9);
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     transform: translateY(-100%); /* hidden above */
@@ -189,7 +249,7 @@ onMounted(() => {
     transition:
       transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
       opacity 0.35s ease;
-    z-index: 100; /* over navbar */
+    z-index: 1100; /* over navbar (navbar is 1000) */
   }
 
   /* Slide starts visually from bottom edge of navbar (simulate by delaying part of motion) */
@@ -249,7 +309,7 @@ onMounted(() => {
   }
 
   .nav-link:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.1);
     transform: translateY(-2px); /* subtle hover animation */
   }
 }
@@ -262,6 +322,10 @@ onMounted(() => {
 
   .nav-brand .brand-link {
     font-size: 1.1rem;
+  }
+
+  .logo {
+    height: 35px;
   }
 
   .nav-links {

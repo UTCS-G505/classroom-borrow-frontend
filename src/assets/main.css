@@ -14,4 +14,5 @@ body {
 /* 內容區塊撐開剩餘空間 */
 .main-content {
   flex: 1;
+  margin-top: 65px; /* 為固定 navbar 留出空間 */
 }
