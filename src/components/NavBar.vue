@@ -109,7 +109,9 @@ onMounted(() => {
   left: 0;
   right: 0;
   z-index: 1000;
-  transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    backdrop-filter 0.3s ease;
 }
 
 .navbar.scrolled {
