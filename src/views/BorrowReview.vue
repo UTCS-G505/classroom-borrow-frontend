@@ -55,21 +55,21 @@ watch(
 // ---------- 彈窗控制區 ----------
 const showModal = ref(false) // 控制彈窗是否顯示
 const currentAction = ref('') //denied或blacklist
-const currentIndex = ref(null)
+const currentApplication = ref(null)
 const inputReason = ref('') // 使用者輸入的理由
 
 // 打開彈窗，傳入動作和申請索引
-function openModal(action, index) {
+function openModal(action, application) {
   currentAction.value = action
-  currentIndex.value = index
+  currentApplication.value = application
   inputReason.value = '' //清空輸入框
   showModal.value = true
 }
 
 // 按下確認 → 更新申請的狀態與理由
 function submitReason() {
-  if (currentIndex.value !== null) {
-    const app = applications.value[currentIndex.value]
+  if (currentApplication.value) {
+    const app = currentApplication.value
     app.status = currentAction.value === 'denied' ? '駁回' : '黑名單'
     app.reason = inputReason.value // 紀錄理由
 
@@ -87,9 +87,9 @@ function submitReason() {
 
 // ---------- 核准申請 ----------
 // 將申請狀態改為 "已核准"
-function approve(index) {
-  applications.value[index].status = '已核准'
-  applications.value[index].reason = ''
+function approve(application) {
+  application.status = '已核准'
+  application.reason = ''
 }
 
 // 區分待審核 / 已完成
@@ -158,7 +158,7 @@ const stats = computed(() => {
 
       <tbody>
         <!-- 逐筆顯示申請資料 -->
-        <tr v-for="(item, index) in applications" :key="index">
+        <tr v-for="(item, index) in pendingApplications" :key="index">
           <td>{{ item.applicant }}</td>
           <td>{{ item.classroom }}</td>
           <td>{{ item.date }} {{ item.startTime }} - {{ item.endTime }}</td>
@@ -171,9 +171,9 @@ const stats = computed(() => {
           </td>
           <td>
             <!-- 操作按鈕 -->
-            <button class="approve" @click="approve(index)">核准</button>
-            <button class="denied" @click="openModal('denied', index)">駁回</button>
-            <button class="blacklist" @click="openModal('blacklist', index)">加入黑名單</button>
+            <button class="approve" @click="approve(item)">核准</button>
+            <button class="denied" @click="openModal('denied', item)">駁回</button>
+            <button class="blacklist" @click="openModal('blacklist', item)">加入黑名單</button>
           </td>
         </tr>
       </tbody>

@@ -1,9 +1,16 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 
 import BorrowReview from './BorrowReview.vue'
 import AnnouncementManagement from './AnnouncementManagement.vue'
 import BlacklistPage from './BlacklistPage.vue'
+
+onMounted(() => {
+  const saved = localStorage.getItem('blacklist')
+  if (saved) {
+    blacklist.value = JSON.parse(saved)
+  }
+})
 
 const links = [
   { label: '借用審核', id: 'borrow-review' },
