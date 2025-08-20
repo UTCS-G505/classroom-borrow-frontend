@@ -101,7 +101,9 @@ onMounted(() => {
   justify-content: space-between;
   padding: 0 1.25rem;
   min-height: 65px;
-  background: var(--nav-bg);
+  /* Background moved to ::before to avoid creating a containing block for
+     descendants with position: fixed when using filter/backdrop-filter */
+  background: transparent;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   margin: 0;
   position: fixed;
@@ -109,6 +111,19 @@ onMounted(() => {
   left: 0;
   right: 0;
   z-index: 1000;
+
+  /* transition remains for variable-based background via ::before */
+  transition: background-color 0.3s ease;
+}
+
+.navbar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--nav-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: -1; /* behind navbar content but within its stacking context */
   transition:
     background-color 0.3s ease,
     backdrop-filter 0.3s ease;
@@ -234,7 +249,7 @@ onMounted(() => {
     transition:
       transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
       opacity 0.35s ease;
-    z-index: 100; /* over navbar */
+    z-index: 1100; /* over navbar (navbar is 1000) */
   }
 
   /* Slide starts visually from bottom edge of navbar (simulate by delaying part of motion) */
