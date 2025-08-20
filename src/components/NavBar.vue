@@ -109,15 +109,11 @@ onMounted(() => {
   left: 0;
   right: 0;
   z-index: 1000;
-  /* backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px); */
   transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
 }
 
 .navbar.scrolled {
   --nav-bg: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
 }
 
 .nav-brand .brand-link {
