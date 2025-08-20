@@ -13,6 +13,7 @@ const links = [
 ]
 
 const isMobileMenuOpen = ref(false)
+const isScrolled = ref(false)
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
@@ -22,6 +23,10 @@ const closeMobileMenu = () => {
   isMobileMenuOpen.value = false
 }
 
+const handleScroll = () => {
+  isScrolled.value = window.scrollY > 10
+}
+
 // Lock body scroll while mobile menu open
 watch(isMobileMenuOpen, (val) => {
   if (typeof document !== 'undefined') {
@@ -29,24 +34,28 @@ watch(isMobileMenuOpen, (val) => {
   }
 })
 
-onUnmounted(() => {
-  if (typeof document !== 'undefined') {
-    document.body.style.overflow = ''
-  }
-})
-
-// Close on Escape key
 onMounted(() => {
-  const handler = (e) => {
+  // Close on Escape key
+  const escapeHandler = (e) => {
     if (e.key === 'Escape') closeMobileMenu()
   }
-  window.addEventListener('keydown', handler)
-  onUnmounted(() => window.removeEventListener('keydown', handler))
+  window.addEventListener('keydown', escapeHandler)
+
+  // Handle scroll for transparent background
+  window.addEventListener('scroll', handleScroll)
+
+  onUnmounted(() => {
+    window.removeEventListener('keydown', escapeHandler)
+    window.removeEventListener('scroll', handleScroll)
+    if (typeof document !== 'undefined') {
+      document.body.style.overflow = ''
+    }
+  })
 })
 </script>
 
 <template>
-  <nav class="navbar">
+  <nav class="navbar" :class="{ scrolled: isScrolled }">
     <div class="nav-brand">
       <RouterLink to="/" class="brand-link">
         <img :src="logo" alt="Logo" class="logo" />
@@ -95,9 +104,20 @@ onMounted(() => {
   background: var(--nav-bg);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   margin: 0;
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   /* backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px); */
+  transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+.navbar.scrolled {
+  --nav-bg: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .nav-brand .brand-link {
