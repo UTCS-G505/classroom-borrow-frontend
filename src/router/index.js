@@ -2,7 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import BorrowRequestView from '../views/BorrowRequestView.vue'
 import introductionPage from '../views/introductionPage.vue'
+<<<<<<< HEAD
 import LoginView from '../views/LoginView.vue'
+=======
+import HomePage from '../views/HomePage.vue'
+>>>>>>> b55299bcfe28918c5c6b3bee4632ca81eea8dfb1
 
 const routes = [
   {
@@ -16,9 +20,20 @@ const routes = [
     component: introductionPage,
   },
   {
+<<<<<<< HEAD
     path: '/login', // 你的網址
     name: 'LoginView',
     component: LoginView,
+=======
+    path: '/home', // 首頁
+    name: 'HomePage',
+    component: HomePage,
+  },
+  {
+    path: '/', // 首頁(根目錄)
+    name: 'HomePage_root',
+    component: HomePage,
+>>>>>>> b55299bcfe28918c5c6b3bee4632ca81eea8dfb1
   },
 ]
 
