@@ -243,30 +243,73 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="record-container">
-    <table class="record-table">
-      <thead>
-        <tr style="color: #cfe2ff">
-          <th>借用日期</th>
-          <th>借用教室</th>
-          <th>活動時間</th>
-          <th>目前狀態</th>
-          <th>詳細資訊</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(item, i) in records" :key="i">
-          <td>{{ item.date }}</td>
-          <td>{{ item.room }}</td>
-          <td>{{ item.time }}</td>
-          <td>
+  <div class="records-view">
+    <h1 class="title">借用紀錄</h1>
+    <hr />
+    <div class="record-container">
+      <!-- 電腦版table -->
+      <table class="record-table desktop-only">
+        <thead>
+          <tr style="color: #cfe2ff">
+            <th>借用日期</th>
+            <th>借用教室</th>
+            <th>活動時間</th>
+            <th>目前狀態</th>
+            <th>詳細資訊</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(item, i) in records" :key="i">
+            <td>{{ item.date }}</td>
+            <td>{{ item.room }}</td>
+            <td>{{ item.time }}</td>
+            <td>
+              <span :class="['status', statusClass(item.status)]">{{ item.status }}</span>
+            </td>
+            <td>
+              <button class="btn btn-blue" @click="showDetails(item)">詳細資訊</button>
+            </td>
+            <td>
+              <button
+                v-if="item.action === '查看原因'"
+                class="btn btn-purple"
+                @click="showReason(item)"
+              >
+                查看原因
+              </button>
+              <button
+                v-else-if="item.action === '我要歸還'"
+                class="btn btn-orange"
+                @click="returnItem(item)"
+              >
+                我要歸還
+              </button>
+              <button
+                v-else-if="item.action === '取消申請'"
+                class="btn btn-red"
+                @click="cancelApplication(item)"
+              >
+                取消申請
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- 手機版 card -->
+      <div class="mobile-only">
+        <div class="record-card" v-for="(item, i) in records" :key="i">
+          <div class="card-header">
+            <div class="room">{{ item.room }}</div>
             <span :class="['status', statusClass(item.status)]">{{ item.status }}</span>
-          </td>
-          <td>
+          </div>
+          <div class="card-body">
+            <p><strong>日期：</strong>{{ item.date }}</p>
+            <p><strong>時間：</strong>{{ item.time }}</p>
+          </div>
+          <div class="card-footer">
             <button class="btn btn-blue" @click="showDetails(item)">詳細資訊</button>
-          </td>
-          <td>
             <button
               v-if="item.action === '查看原因'"
               class="btn btn-purple"
@@ -288,23 +331,135 @@ onMounted(() => {
             >
               取消申請
             </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- 詳細資訊彈出視窗 -->
-  <div v-if="showDetailModal" class="modal-overlay" @click="closeModal">
-    <div class="modal-content" @click.stop>
-      <div class="modal-header">
-        <h2>借用詳細資訊</h2>
-        <button class="close-btn" @click="closeModal">×</button>
+          </div>
+        </div>
       </div>
-      <div class="modal-body">
-        <div class="detail-section">
-          <h3>基本資訊</h3>
-          <div class="detail-grid">
+    </div>
+
+    <!-- 詳細資訊彈出視窗 -->
+    <div v-if="showDetailModal" class="modal-overlay" @click="closeModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h2>借用詳細資訊</h2>
+          <button class="close-btn" @click="closeModal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-section">
+            <h3>基本資訊</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">申請編號：</span>
+                <span class="value">{{ currentRecord.id }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">借用教室：</span>
+                <span class="value">{{ currentRecord.room }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">借用類型：</span>
+                <span class="value">{{ currentRecord.borrowType }}</span>
+              </div>
+              <div class="detail-item" v-if="currentRecord.borrowType === '多次借用'">
+                <span class="label">重複頻率：</span>
+                <span class="value">{{ currentRecord.repeatType }}</span>
+              </div>
+              <div class="detail-item" v-if="currentRecord.borrowType === '單次借用'">
+                <span class="label">借用日期：</span>
+                <span class="value">{{ currentRecord.date }}</span>
+              </div>
+              <div class="detail-item" v-if="currentRecord.borrowType === '多次借用'">
+                <span class="label">起始日期：</span>
+                <span class="value">{{ currentRecord.multiStartDate }}</span>
+              </div>
+              <div class="detail-item" v-if="currentRecord.borrowType === '多次借用'">
+                <span class="label">結束日期：</span>
+                <span class="value">{{ currentRecord.multiEndDate }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">活動時間：</span>
+                <span class="value">{{ currentRecord.time }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">目前狀態：</span>
+                <span :class="['status', statusClass(currentRecord.status)]">{{
+                  currentRecord.status
+                }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h3>活動資訊</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">活動名稱：</span>
+                <span class="value">{{ currentRecord.eventName }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">活動人數：</span>
+                <span class="value">{{ currentRecord.peopleCount }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">借用類型：</span>
+                <span class="value">{{ currentRecord.borrowType }}</span>
+              </div>
+              <div class="detail-item full-width">
+                <span class="label">活動內容說明：</span>
+                <span class="value">{{ currentRecord.description }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h3>聯絡資訊</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">借用人姓名：</span>
+                <span class="value">{{ currentRecord.borrowerName }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">指導老師姓名：</span>
+                <span class="value">{{ currentRecord.teacherName }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">借用人系級：</span>
+                <span class="value">{{ currentRecord.borrowerDepartment }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">指導老師系所：</span>
+                <span class="value">{{ currentRecord.teacherDepartment }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">借用人Email：</span>
+                <span class="value">{{ currentRecord.borrowerEmail }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">指導老師Email：</span>
+                <span class="value">{{ currentRecord.teacherEmail }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">借用人電話：</span>
+                <span class="value">{{ currentRecord.borrowerPhone }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">指導老師電話：</span>
+                <span class="value">{{ currentRecord.teacherPhone }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 查看原因彈出視窗 -->
+    <div v-if="showReasonModal" class="modal-overlay" @click="closeModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h2>駁回原因</h2>
+          <button class="close-btn" @click="closeModal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="reason-content">
             <div class="detail-item">
               <span class="label">申請編號：</span>
               <span class="value">{{ currentRecord.id }}</span>
@@ -314,125 +469,13 @@ onMounted(() => {
               <span class="value">{{ currentRecord.room }}</span>
             </div>
             <div class="detail-item">
-              <span class="label">借用類型：</span>
-              <span class="value">{{ currentRecord.borrowType }}</span>
+              <span class="label">借用時間：</span>
+              <span class="value">{{ currentRecord.date }} {{ currentRecord.time }}</span>
             </div>
-            <div class="detail-item" v-if="currentRecord.borrowType === '多次借用'">
-              <span class="label">重複頻率：</span>
-              <span class="value">{{ currentRecord.repeatType }}</span>
+            <div class="reason-text">
+              <h4>駁回原因：</h4>
+              <p>{{ currentRecord.rejectReason || '管理員介面傳送過來文字' }}</p>
             </div>
-            <div class="detail-item" v-if="currentRecord.borrowType === '單次借用'">
-              <span class="label">借用日期：</span>
-              <span class="value">{{ currentRecord.date }}</span>
-            </div>
-            <div class="detail-item" v-if="currentRecord.borrowType === '多次借用'">
-              <span class="label">起始日期：</span>
-              <span class="value">{{ currentRecord.multiStartDate }}</span>
-            </div>
-            <div class="detail-item" v-if="currentRecord.borrowType === '多次借用'">
-              <span class="label">結束日期：</span>
-              <span class="value">{{ currentRecord.multiEndDate }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">活動時間：</span>
-              <span class="value">{{ currentRecord.time }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">目前狀態：</span>
-              <span :class="['status', statusClass(currentRecord.status)]">{{
-                currentRecord.status
-              }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="detail-section">
-          <h3>活動資訊</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="label">活動名稱：</span>
-              <span class="value">{{ currentRecord.eventName }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">活動人數：</span>
-              <span class="value">{{ currentRecord.peopleCount }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">借用類型：</span>
-              <span class="value">{{ currentRecord.borrowType }}</span>
-            </div>
-            <div class="detail-item full-width">
-              <span class="label">活動內容說明：</span>
-              <span class="value">{{ currentRecord.description }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="detail-section">
-          <h3>聯絡資訊</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="label">借用人姓名：</span>
-              <span class="value">{{ currentRecord.borrowerName }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">指導老師姓名：</span>
-              <span class="value">{{ currentRecord.teacherName }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">借用人系級：</span>
-              <span class="value">{{ currentRecord.borrowerDepartment }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">指導老師系所：</span>
-              <span class="value">{{ currentRecord.teacherDepartment }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">借用人Email：</span>
-              <span class="value">{{ currentRecord.borrowerEmail }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">指導老師Email：</span>
-              <span class="value">{{ currentRecord.teacherEmail }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">借用人電話：</span>
-              <span class="value">{{ currentRecord.borrowerPhone }}</span>
-            </div>
-            <div class="detail-item">
-              <span class="label">指導老師電話：</span>
-              <span class="value">{{ currentRecord.teacherPhone }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 查看原因彈出視窗 -->
-  <div v-if="showReasonModal" class="modal-overlay" @click="closeModal">
-    <div class="modal-content" @click.stop>
-      <div class="modal-header">
-        <h2>駁回原因</h2>
-        <button class="close-btn" @click="closeModal">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="reason-content">
-          <div class="detail-item">
-            <span class="label">申請編號：</span>
-            <span class="value">{{ currentRecord.id }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">借用教室：</span>
-            <span class="value">{{ currentRecord.room }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="label">借用時間：</span>
-            <span class="value">{{ currentRecord.date }} {{ currentRecord.time }}</span>
-          </div>
-          <div class="reason-text">
-            <h4>駁回原因：</h4>
-            <p>{{ currentRecord.rejectReason || '管理員介面傳送過來文字' }}</p>
           </div>
         </div>
       </div>
@@ -441,9 +484,30 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.records-view {
+  max-width: 1000px;
+  margin: 40px auto;
+  color: #666;
+}
+h1 {
+  color: #666;
+  font-weight: bold;
+}
+.records-view h1 {
+  font-size: 30px;
+  margin-bottom: 20px;
+}
+/* === 桌機/手機切換 === */
+.desktop-only {
+  display: table;
+}
+.mobile-only {
+  display: none;
+}
+
 .record-container {
   margin: auto;
-  margin-top: 60px;
+  margin-top: 40px;
   background-color: #ffffff;
   border: 1px solid #eee;
   border-radius: 20px;
@@ -486,7 +550,7 @@ onMounted(() => {
   font-size: 14px;
   font-weight: bold;
   display: inline-block;
-  min-width: 70px;
+  white-space: nowrap; /* 避免換行 */
 }
 .status-gray {
   background-color: #e9ecef;
@@ -687,73 +751,52 @@ onMounted(() => {
 
 /* 手機板 RWD */
 @media (max-width: 768px) {
-  .record-container {
-    margin-top: 20px;
-    padding: 15px;
-    max-width: 100%;
+  .records-view h1 {
+    font-size: 24px;
   }
-
-  .record-table {
-    font-size: 14px;
+  .desktop-only {
+    display: none;
   }
-
-  .record-table th {
-    padding: 12px 8px;
-    font-size: 14px;
-  }
-
-  .record-table td {
-    padding: 15px 8px;
-  }
-
-  .btn {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-
-  .modal-content {
-    width: 95%;
-    margin: 10px;
-  }
-
-  .modal-header {
-    padding: 15px 20px;
-  }
-
-  .modal-header h2 {
-    font-size: 20px;
-  }
-
-  .modal-body {
-    padding: 20px;
-  }
-
-  .detail-grid {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .detail-item .label {
-    font-size: 13px;
-  }
-
-  .detail-item .value {
-    font-size: 14px;
+  .mobile-only {
+    display: block;
   }
 }
 
-/* 平板 RWD */
-@media (max-width: 1024px) and (min-width: 769px) {
-  .record-container {
-    padding: 25px;
-  }
+/* === 手機卡片樣式 === */
+.record-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
 
-  .modal-content {
-    width: 85%;
-  }
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
 
-  .detail-grid {
-    gap: 12px;
-  }
+.card-header .room {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.card-body p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.card-footer {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.card-footer .btn {
+  flex: 1 1 auto;
+  text-align: center;
 }
 </style>
