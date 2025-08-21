@@ -87,7 +87,7 @@ function handleDeleteBlacklist(index) {
 }
 
 .sidebar {
-  width: 200px;
+  width: 160px;
   background-color: #5d5c61;
   color: #fff;
   padding: 1rem;
