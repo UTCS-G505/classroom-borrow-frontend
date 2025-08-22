@@ -228,6 +228,7 @@ button:hover {
   justify-content: center;
   border-radius: 50%;
   flex-shrink: 0; /* 不要被壓縮 */
+  transition: all 0.3s ease;
 }
 
 .deleteBtn:hover {

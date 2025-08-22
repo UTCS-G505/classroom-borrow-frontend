@@ -20,6 +20,17 @@ onMounted(() => {
         endTime: '15:00',
         status: '審核中',
         reason: '',
+        borrowType: '單次借用',
+        eventName: '程式設計課程',
+        peopleCount: 20,
+        description: '課程教學',
+        teacherName: '李教授',
+        borrowerDepartment: '資訊工程系',
+        teacherDepartment: '資訊工程系',
+        borrowerEmail: 'wang@example.com',
+        teacherEmail: 'li@example.com',
+        borrowerPhone: '0912-345-678',
+        teacherPhone: '02-1234-5678',
       },
       {
         applicant: '陳XX',
@@ -29,6 +40,17 @@ onMounted(() => {
         endTime: '12:00',
         status: '審核中',
         reason: '',
+        borrowType: '單次借用',
+        eventName: '學生會會議',
+        peopleCount: 15,
+        description: '學生會討論活動',
+        teacherName: '張教授',
+        borrowerDepartment: '學生會',
+        teacherDepartment: '學務處',
+        borrowerEmail: 'chen@example.com',
+        teacherEmail: 'zhang@example.com',
+        borrowerPhone: '0987-654-321',
+        teacherPhone: '02-8765-4321',
       },
       {
         applicant: '張XX',
@@ -38,6 +60,40 @@ onMounted(() => {
         endTime: '15:00',
         status: '審核中',
         reason: '',
+        borrowType: '單次借用',
+        eventName: '社團活動',
+        peopleCount: 25,
+        description: '社團幹部訓練活動',
+        teacherName: '劉教授',
+        borrowerDepartment: '學務處',
+        teacherDepartment: '學務處',
+        borrowerEmail: 'zhang@example.com',
+        teacherEmail: 'liu@example.com',
+        borrowerPhone: '0923-456-789',
+        teacherPhone: '02-2345-6789',
+      },
+      {
+        applicant: '林XX',
+        classroom: 'G316',
+        date: '2025/08/10 至 2025/12/31',
+        multiStartDate: '2025.08.10',
+        multiEndDate: '2025.12.31',
+        startTime: '14:00',
+        endTime: '15:00',
+        status: '審核中',
+        reason: '',
+        borrowType: '多次借用',
+        eventName: '週會課程',
+        repeatType: '每周',
+        peopleCount: 25,
+        description: '每週定期課程教學',
+        teacherName: '李教授',
+        borrowerDepartment: '資訊科學系',
+        teacherDepartment: '資訊科學系',
+        borrowerEmail: 'zhang@example.com',
+        teacherEmail: 'liu@example.com',
+        borrowerPhone: '0923-456-789',
+        teacherPhone: '02-2345-6789',
       },
     ]
   }
@@ -111,6 +167,21 @@ const stats = computed(() => {
   const blacklist = applications.value.filter((item) => item.status == '黑名單').length //黑名單數量
   return { total, pending, approved, disallowed, blacklist }
 })
+
+//詳細資訊彈窗
+const showDetailModal = ref(false)
+const detailApplication = ref(null)
+
+//打開詳細資訊彈窗
+function openDetail(app) {
+  detailApplication.value = app
+  showDetailModal.value = true
+}
+
+//關閉詳細資訊彈窗
+function closeModal() {
+  showDetailModal.value = false
+}
 </script>
 
 <template>
@@ -162,7 +233,7 @@ const stats = computed(() => {
           <td>{{ item.applicant }}</td>
           <td>{{ item.classroom }}</td>
           <td>{{ item.date }} {{ item.startTime }} - {{ item.endTime }}</td>
-          <td><button class="purpose">詳細資訊</button></td>
+          <td><button class="purpose" @click="openDetail(item)">詳細資訊</button></td>
           <td>
             <!-- 顯示當前狀態 -->
             <span>{{ item.status }}</span>
@@ -218,6 +289,112 @@ const stats = computed(() => {
       <div class="modalButtons">
         <button @click="submitReason">確認</button>
         <button @click="showModal = false">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 詳細資訊彈出視窗 -->
+  <div v-if="showDetailModal" class="modalOverlay" @click="closeModal">
+    <div class="detail-content" @click.stop>
+      <div class="detail-header">
+        <h2>借用詳細資訊</h2>
+        <button class="close-btn" @click="closeModal">×</button>
+      </div>
+
+      <div class="detail-body">
+        <!-- 基本資訊 -->
+        <div class="detail-section">
+          <h3>基本資訊</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">借用教室：</span>
+              <span class="value">{{ detailApplication.classroom || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">借用類型：</span>
+              <span class="value">{{ detailApplication.borrowType || '-' }}</span>
+            </div>
+            <div class="detail-item" v-if="detailApplication.borrowType === '多次借用'">
+              <span class="label">重複頻率：</span>
+              <span class="value">{{ detailApplication.repeatType || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">借用日期：</span>
+              <span class="value" v-if="detailApplication.borrowType === '單次借用'">
+                {{ detailApplication.date || '-' }}
+              </span>
+              <span class="value" v-else>
+                {{ detailApplication.multiStartDate || '-' }} 至
+                {{ detailApplication.multiEndDate || '-' }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="label">活動時間：</span>
+              <span class="value"
+                >{{ detailApplication.startTime || '-' }} -
+                {{ detailApplication.endTime || '-' }}</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- 活動資訊 -->
+        <div class="detail-section">
+          <h3>活動資訊</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">活動名稱：</span>
+              <span class="value">{{ detailApplication.eventName || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">活動人數：</span>
+              <span class="value">{{ detailApplication.peopleCount || '-' }}</span>
+            </div>
+            <div class="detail-item full-width">
+              <span class="label">活動內容說明：</span>
+              <span class="value">{{ detailApplication.description || '-' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 聯絡資訊 -->
+        <div class="detail-section">
+          <h3>聯絡資訊</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="label">借用人姓名：</span>
+              <span class="value">{{ detailApplication.applicant || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">指導老師姓名：</span>
+              <span class="value">{{ detailApplication.teacherName || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">借用人系級：</span>
+              <span class="value">{{ detailApplication.borrowerDepartment || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">指導老師系所：</span>
+              <span class="value">{{ detailApplication.teacherDepartment || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">借用人Email：</span>
+              <span class="value">{{ detailApplication.borrowerEmail || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">指導老師Email：</span>
+              <span class="value">{{ detailApplication.teacherEmail || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">借用人電話：</span>
+              <span class="value">{{ detailApplication.borrowerPhone || '-' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">指導老師電話：</span>
+              <span class="value">{{ detailApplication.teacherPhone || '-' }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -304,7 +481,7 @@ button {
   color: #666;
 }
 
-/* ---------- 彈窗樣式 ---------- */
+/* ---------- 輸入理由彈窗樣式 ---------- */
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -335,7 +512,6 @@ button {
   border: solid 1px #ccc;
 }
 
-/* 彈窗按鈕區 (彈性排版 + 間距) */
 .modalButtons {
   display: flex;
   justify-content: flex-end;
@@ -346,6 +522,95 @@ button {
 .modalButtons button {
   background-color: #dcdddf;
   color: #666;
+}
+
+/* ---------- 詳細資訊彈窗樣式 ---------- */
+.detail-content {
+  color: #333;
+  background-color: white;
+  border-radius: 15px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  border-bottom: 1px solid #eee;
+  background-color: #f8f9fa;
+  border-radius: 15px 15px 0 0;
+}
+
+.detail-header h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 30px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+.close-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.detail-body {
+  padding: 30px;
+}
+.detail-section {
+  margin-bottom: 30px;
+}
+
+.detail-section h3 {
+  margin-bottom: 15px;
+  font-size: 20px;
+  border-bottom: 2px solid #ccc;
+  padding-bottom: 5px;
+}
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+.detail-item .label {
+  font-weight: bold;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+.detail-item .value {
+  color: #333;
+  font-size: 16px;
+  word-wrap: break-word;
+}
+.reason-content {
+  text-align: left;
 }
 
 /* --------- 手機版 RWD --------- */
