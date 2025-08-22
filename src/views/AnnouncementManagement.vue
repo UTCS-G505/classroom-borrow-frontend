@@ -127,8 +127,8 @@ function closeModal() {
     <div class="list">
       <ul>
         <li v-for="(rule, index) in rules" :key="rule.id">
+          <span class="text">{{ index + 1 }}. {{ rule.content }}{{ rule.addition }}</span>
           <span class="deleteBtn" @click="confirmDelete(rule.id, rule.content)">x</span>
-          {{ index + 1 }}. {{ rule.content }}{{ rule.addition }}
         </li>
         <li :key="finalRule.id">{{ rules.length + 1 }}. {{ finalRule.content }}</li>
       </ul>
@@ -209,25 +209,25 @@ button:hover {
   padding: 10px;
   background-color: #f8f9fa;
   border-radius: 5px;
-  position: relative;
   line-height: 1.5;
+
+  display: flex; /* 啟用 flex */
+  justify-content: space-between; /* 左右分散 */
+  align-items: flex-start; /* 文字從上對齊 */
+  gap: 10px; /* 文字和按鈕間隔 */
 }
 
 .deleteBtn {
   color: #e74c3c;
   cursor: pointer;
-  margin-left: 8px;
   font-size: 18px;
-  /* font-weight: bold; */
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  flex-shrink: 0; /* 不要被壓縮 */
 }
 
 .deleteBtn:hover {
@@ -287,5 +287,41 @@ button:hover {
 
 .confirmBtn:hover {
   background-color: #c0392b;
+}
+
+/* --------- 手機版 RWD --------- */
+@media (max-width: 768px) {
+  button {
+    width: 100%; /* 手機上按鈕全寬 */
+    margin-top: 8px;
+    font-size: 14px;
+  }
+
+  .list li {
+    font-size: 14px;
+    padding: 8px;
+    word-wrap: break-word; /* 長字換行 */
+    word-break: break-word;
+  }
+
+  .deleteBtn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .modalBox {
+    width: 80%; /* 手機螢幕自適應 */
+    padding: 20px;
+  }
+
+  .modalContent {
+    font-size: 14px;
+  }
+
+  .cancelBtn,
+  .confirmBtn {
+    width: 100%;
+    margin: 10px 0 0;
+  }
 }
 </style>

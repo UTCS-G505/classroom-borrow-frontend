@@ -84,8 +84,10 @@ function handleDeleteBlacklist(index) {
 .container {
   display: flex;
   min-height: 100vh;
+  flex-direction: row;
 }
 
+/*側邊欄*/
 .sidebar {
   width: 160px;
   background-color: #5d5c61;
@@ -126,6 +128,31 @@ function handleDeleteBlacklist(index) {
   padding: 20px;
   background-color: #f6f6f5;
 }
+
+/* --------- 手機版 RWD --------- */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    padding: 0.5rem;
+  }
+
+  .sidebarTitle {
+    display: none; /* 手機版隱藏大標題，省空間 */
+  }
+
+  .sidebar ul {
+    display: flex; /* 導覽改成橫向 */
+    justify-content: space-around;
+  }
+
+  .sidebar li {
+    margin-bottom: 0;
+  }
+}
 </style>
 
 <style>
@@ -133,7 +160,12 @@ function handleDeleteBlacklist(index) {
   padding: 0;
   margin: 0;
 }
+
+html,
 body {
   background-color: #f6f6f5;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden; /* 防止橫向捲動 */
 }
 </style>

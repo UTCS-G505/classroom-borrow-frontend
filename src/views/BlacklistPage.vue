@@ -78,4 +78,12 @@ button {
   cursor: pointer;
   margin-right: 5px;
 }
+
+@media (max-width: 768px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
 </style>

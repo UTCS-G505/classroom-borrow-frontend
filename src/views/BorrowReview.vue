@@ -330,7 +330,6 @@ button {
 .modal textarea {
   width: 100%;
   margin-top: 10px;
-  padding: 5px;
   resize: none;
   font-size: 16px;
   border: solid 1px #ccc;
@@ -347,5 +346,48 @@ button {
 .modalButtons button {
   background-color: #dcdddf;
   color: #666;
+}
+
+/* --------- 手機版 RWD --------- */
+@media (max-width: 768px) {
+  /* 統計區改直排 */
+  .data {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .divider {
+    display: none; /* 手機就不要顯示分隔線 */
+  }
+
+  /* 表格支援橫向捲動 */
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  /* 操作按鈕：堆疊顯示 */
+  td button {
+    display: block;
+    width: 100%;
+    margin: 5px 0;
+  }
+
+  /* 彈窗寬度調整 */
+  .modal {
+    width: 80%;
+    padding: 15px;
+  }
+
+  /* 彈窗按鈕改直排 */
+  .modalButtons {
+    flex-direction: column;
+  }
+
+  .modalButtons button {
+    width: 100%;
+  }
 }
 </style>
