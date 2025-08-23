@@ -1,8 +1,11 @@
 <script setup>
-import { reactive, onMounted } from 'vue'
-import { useRoute } from 'vue-router' // 引入 useRoute
+import { reactive, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
-const route = useRoute() // 獲取當前路由
+const route = useRoute()
+
+// 當前階段 (1, 2, 3)
+const currentStage = ref(1)
 
 const result = reactive({})
 
@@ -151,19 +154,91 @@ const validateField = (field) => {
   return true
 }
 
-const validateAllFields = () => {
+// 階段 1 的驗證函數
+const validateStage1 = () => {
+  const stage1Fields = ['classroom', 'peopleCount', 'borrowType']
+
+  // 根據借用類型添加相應的時間欄位
+  if (form.borrowType === '單次借用') {
+    stage1Fields.push('date', 'startTime', 'endTime')
+  } else if (form.borrowType === '多次借用') {
+    stage1Fields.push('multiStartDate', 'multiEndDate', 'repeatType', 'startTime', 'endTime')
+  }
+
   let isValid = true
-  Object.keys(form).forEach((field) => {
-    const fieldValid = validateField(field)
-    if (!fieldValid) {
+  stage1Fields.forEach((field) => {
+    if (!validateField(field)) {
       isValid = false
     }
   })
   return isValid
 }
 
+// 階段 2 的驗證函數
+const validateStage2 = () => {
+  const stage2Fields = ['eventName', 'description']
+  let isValid = true
+  stage2Fields.forEach((field) => {
+    if (!validateField(field)) {
+      isValid = false
+    }
+  })
+  return isValid
+}
+
+// 階段 3 的驗證函數
+const validateStage3 = () => {
+  const stage3Fields = [
+    'borrowerName',
+    'teacherName',
+    'borrowerDepartment',
+    'teacherDepartment',
+    'borrowerEmail',
+    'teacherEmail',
+    'borrowerPhone',
+    'teacherPhone',
+  ]
+  let isValid = true
+  stage3Fields.forEach((field) => {
+    if (!validateField(field)) {
+      isValid = false
+    }
+  })
+  return isValid
+}
+
+// 前往下一階段
+const nextStage = () => {
+  let canProceed = false
+
+  if (currentStage.value === 1) {
+    canProceed = validateStage1()
+    if (!canProceed) {
+      alert('請完成基本借用資訊！')
+      return
+    }
+  } else if (currentStage.value === 2) {
+    canProceed = validateStage2()
+    if (!canProceed) {
+      alert('請完成活動資訊！')
+      return
+    }
+  }
+
+  if (canProceed && currentStage.value < 3) {
+    currentStage.value++
+  }
+}
+
+// 回到上一階段
+const prevStage = () => {
+  if (currentStage.value > 1) {
+    currentStage.value--
+  }
+}
+
 const submitForm = () => {
-  if (!validateAllFields()) {
+  if (!validateStage3()) {
     alert('請修正表單中的錯誤！')
     return
   }
@@ -184,6 +259,9 @@ const submitForm = () => {
   Object.keys(errors).forEach((key) => {
     errors[key] = ''
   })
+
+  // 重置到第一階段
+  currentStage.value = 1
 }
 
 // 在組件掛載時設置教室名稱
@@ -196,15 +274,211 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="form-container">
-    <h1>活動資訊</h1>
-    <hr style="width: 96%; margin: 0 auto" />
+  <div class="borrow-view">
+    <h1 style="padding: 0px 0px 0px 10px">借用申請</h1>
+    <hr />
 
-    <!-- 活動名稱 & 活動人數 -->
-    <div class="row">
+    <!-- 階段指示器 -->
+    <div class="stage-indicator">
+      <div class="stage-item" :class="{ active: currentStage === 1, completed: currentStage > 1 }">
+        <div class="stage-number">1</div>
+        <div class="stage-title">基本借用資訊</div>
+      </div>
+      <div class="stage-divider"></div>
+      <div class="stage-item" :class="{ active: currentStage === 2, completed: currentStage > 2 }">
+        <div class="stage-number">2</div>
+        <div class="stage-title">活動資訊</div>
+      </div>
+      <div class="stage-divider"></div>
+      <div class="stage-item" :class="{ active: currentStage === 3 }">
+        <div class="stage-number">3</div>
+        <div class="stage-title">聯絡資訊</div>
+      </div>
+    </div>
+
+    <!-- 階段 1: 基本借用資訊 -->
+    <div v-if="currentStage === 1" class="form-container">
+      <h1>基本借用資訊</h1>
+      <hr style="width: 96%; margin: 0 auto" />
+
+      <!-- 選擇教室 & 活動人數 -->
+      <div class="row">
+        <div class="field">
+          <label>選擇教室</label>
+          <select
+            @change="() => validateField('classroom')"
+            v-model="form.classroom"
+            :style="{ color: form.classroom === '' ? '#6c6c6c' : '#000' }"
+          >
+            <option value="">請選擇教室</option>
+            <option value="G312">G312 會議室</option>
+            <option value="G313">G313 普通教室</option>
+            <option value="G314">G314 普通教室</option>
+            <option value="G315">G315 電腦教室</option>
+            <option value="G316">G316 電腦教室</option>
+            <option value="G501">G501 會議室</option>
+            <option value="G508">G508 系圖書館</option>
+            <option value="G509">G509 IOS教室</option>
+            <option value="G516">G516 電腦教室</option>
+          </select>
+          <span class="error" v-if="errors.classroom">{{ errors.classroom }}</span>
+        </div>
+
+        <div class="field">
+          <label>活動人數</label>
+          <input
+            type="number"
+            v-model="form.peopleCount"
+            placeholder="請填寫活動人數"
+            @input="() => validateField('peopleCount')"
+          />
+          <span class="error" v-if="errors.peopleCount">{{ errors.peopleCount }}</span>
+        </div>
+      </div>
+
+      <!-- 借用類型 -->
+      <div class="row">
+        <div class="field">
+          <label>借用類型</label>
+          <div>
+            <label>
+              <input
+                type="radio"
+                value="單次借用"
+                v-model="form.borrowType"
+                @change="() => validateField('borrowType')"
+              />
+              單次借用
+            </label>
+            <label>
+              <input
+                type="radio"
+                value="多次借用"
+                v-model="form.borrowType"
+                @change="() => validateField('borrowType')"
+              />
+              多次借用
+            </label>
+            <span class="error" v-if="errors.borrowType">{{ errors.borrowType }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 顯示多次借用的額外選項 -->
+      <div v-if="form.borrowType === '多次借用'" class="row">
+        <div class="field">
+          <label>頻率</label>
+          <select
+            v-model="form.repeatType"
+            @change="() => validateField('repeatType')"
+            :style="{ color: form.repeatType === '' ? '#6c6c6c' : '#000' }"
+          >
+            <option value="">請選擇頻率</option>
+            <option value="每天">每天</option>
+            <option value="每周">每周</option>
+          </select>
+          <span class="error" v-if="errors.repeatType">{{ errors.repeatType }}</span>
+        </div>
+
+        <div class="field">
+          <label>起始日期</label>
+          <input
+            type="date"
+            v-model="form.multiStartDate"
+            @input="() => validateField('multiStartDate')"
+            :style="{ color: form.multiStartDate === '' ? '#6c6c6c' : '#000' }"
+          />
+          <span class="error" v-if="errors.multiStartDate">{{ errors.multiStartDate }}</span>
+        </div>
+
+        <div class="field">
+          <label>結束日期</label>
+          <input
+            type="date"
+            v-model="form.multiEndDate"
+            @input="() => validateField('multiEndDate')"
+            :style="{ color: form.multiEndDate === '' ? '#6c6c6c' : '#000' }"
+          />
+          <span class="error" v-if="errors.multiEndDate">{{ errors.multiEndDate }}</span>
+        </div>
+      </div>
+
+      <!-- 日期 & 時間 -->
+      <div class="row">
+        <!-- 單次借用時顯示選擇日期 -->
+        <div class="field" v-if="form.borrowType !== '多次借用'">
+          <label>選擇日期</label>
+          <input
+            type="date"
+            v-model="form.date"
+            :style="{ color: form.date === '' ? '#6c6c6c' : '#000' }"
+            @input="() => validateField('date')"
+          />
+          <span class="error" v-if="errors.date">{{ errors.date }}</span>
+        </div>
+
+        <!-- 活動時間 -->
+        <div class="field">
+          <label>活動時間(起)</label>
+          <select
+            v-model="form.startTime"
+            @change="() => validateField('startTime')"
+            :style="{ color: form.startTime === '' ? '#6c6c6c' : '#000' }"
+          >
+            <option value="">請選取活動開始時段</option>
+            <option value="0810-0900">第 1 節 0810-0900</option>
+            <option value="0910-1000">第 2 節 0910-1000</option>
+            <option value="1010-1100">第 3 節 1010-1100</option>
+            <option value="1110-1200">第 4 節 1110-1200</option>
+            <option value="1210-1300">第 5 節 1210-1300</option>
+            <option value="1310-1400">第 6 節 1310-1400</option>
+            <option value="1410-1500">第 7 節 1410-1500</option>
+            <option value="1510-1600">第 8 節 1510-1600</option>
+            <option value="1610-1700">第 9 節 1610-1700</option>
+            <option value="1710-1800">第 10 節 1710-1800</option>
+            <option value="1810-1900">第 11 節 1810-1900</option>
+            <option value="1910-2000">第 12 節 1910-2000</option>
+            <option value="2010-2100">第 13 節 2010-2100</option>
+            <option value="2110-2200">第 14 節 2110-2200</option>
+          </select>
+          <span class="error" v-if="errors.startTime">{{ errors.startTime }}</span>
+        </div>
+        <div class="field">
+          <label>活動時間(迄)</label>
+          <select
+            v-model="form.endTime"
+            @change="() => validateField('endTime')"
+            :style="{ color: form.endTime === '' ? '#6c6c6c' : '#000' }"
+          >
+            <option value="">請選取活動結束時段</option>
+            <option value="0810-0900">第 1 節 0810-0900</option>
+            <option value="0910-1000">第 2 節 0910-1000</option>
+            <option value="1010-1100">第 3 節 1010-1100</option>
+            <option value="1110-1200">第 4 節 1110-1200</option>
+            <option value="1210-1300">第 5 節 1210-1300</option>
+            <option value="1310-1400">第 6 節 1310-1400</option>
+            <option value="1410-1500">第 7 節 1410-1500</option>
+            <option value="1510-1600">第 8 節 1510-1600</option>
+            <option value="1610-1700">第 9 節 1610-1700</option>
+            <option value="1710-1800">第 10 節 1710-1800</option>
+            <option value="1810-1900">第 11 節 1810-1900</option>
+            <option value="1910-2000">第 12 節 1910-2000</option>
+            <option value="2010-2100">第 13 節 2010-2100</option>
+            <option value="2110-2200">第 14 節 2110-2200</option>
+          </select>
+          <span class="error" v-if="errors.endTime">{{ errors.endTime }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 階段 2: 活動資訊 -->
+    <div v-if="currentStage === 2" class="form-container">
+      <h1>活動資訊</h1>
+      <hr style="width: 96%; margin: 0 auto" />
+
+      <!-- 活動名稱 -->
       <div class="field">
         <label>活動名稱</label>
-        <!-- v-model的意思是雙向綁定，當輸入框的值改變時，form.eventName也會隨之改變 -->
         <input
           v-model="form.eventName"
           @input="() => validateField('eventName')"
@@ -213,295 +487,203 @@ onMounted(() => {
         <span class="error" v-if="errors.eventName">{{ errors.eventName }}</span>
       </div>
 
+      <!-- 活動內容 -->
       <div class="field">
-        <label>活動人數</label>
-        <!-- 輸入的只能是數字，或是旁邊箭頭只能是正整數加減，不能輸入中文 -->
-        <input
-          type="number"
-          v-model="form.peopleCount"
-          placeholder="請填寫活動人數"
-          @input="() => validateField('peopleCount')"
-        />
-        <span class="error" v-if="errors.peopleCount">{{ errors.peopleCount }}</span>
+        <label>活動內容說明</label>
+        <textarea
+          v-model="form.description"
+          placeholder="請填寫活動內容說明"
+          @input="() => validateField('description')"
+        ></textarea>
+        <span class="error" v-if="errors.description">{{ errors.description }}</span>
       </div>
     </div>
 
-    <!-- 選擇教室 & 借用類型 -->
-    <div class="row">
-      <div class="field">
-        <label>選擇教室</label>
-        <select
-          @change="() => validateField('classroom')"
-          v-model="form.classroom"
-          :style="{ color: form.classroom === '' ? '#6c6c6c' : '#000' }"
-        >
-          <option value="">請選擇教室</option>
-          <option value="G312">G312 會議室</option>
-          <option value="G313">G313 普通教室</option>
-          <option value="G314">G314 普通教室</option>
-          <option value="G315">G315 電腦教室</option>
-          <option value="G316">G316 電腦教室</option>
-          <option value="G501">G501 會議室</option>
-          <option value="G508">G508 系圖書館</option>
-          <option value="G509">G509 IOS教室</option>
-          <option value="G516">G516 電腦教室</option>
-        </select>
-        <span class="error" v-if="errors.classroom">{{ errors.classroom }}</span>
+    <!-- 階段 3: 聯絡資訊 -->
+    <div v-if="currentStage === 3" class="form-container">
+      <h1>聯絡資訊</h1>
+      <hr style="width: 96%; margin: 0 auto" />
+
+      <!-- 借用人姓名 & 指導老師姓名 -->
+      <div class="row">
+        <div class="field">
+          <label>借用人姓名</label>
+          <input
+            v-model="form.borrowerName"
+            placeholder="請填寫借用人姓名"
+            @input="() => validateField('borrowerName')"
+          />
+          <span class="error" v-if="errors.borrowerName">{{ errors.borrowerName }}</span>
+        </div>
+
+        <div class="field">
+          <label>指導老師姓名(單位代表)</label>
+          <input
+            v-model="form.teacherName"
+            placeholder="請填寫指導老師姓名"
+            @input="() => validateField('teacherName')"
+          />
+          <span class="error" v-if="errors.teacherName">{{ errors.teacherName }}</span>
+        </div>
       </div>
-      <div class="field">
-        <label>借用類型</label>
-        <div>
-          <label>
-            <input
-              type="radio"
-              value="單次借用"
-              v-model="form.borrowType"
-              @change="() => validateField('borrowType')"
-            />
-            單次借用
-          </label>
-          <label>
-            <input
-              type="radio"
-              value="多次借用"
-              v-model="form.borrowType"
-              @change="() => validateField('borrowType')"
-            />
-            多次借用
-          </label>
-          <span class="error" v-if="errors.borrowType">{{ errors.borrowType }}</span>
+
+      <!-- 借用人系級/服務單位 & 指導老師系所(單位) -->
+      <div class="row">
+        <div class="field">
+          <label>借用人系級/服務單位</label>
+          <input
+            v-model="form.borrowerDepartment"
+            placeholder="請填寫借用人系級/服務單位"
+            @input="() => validateField('borrowerDepartment')"
+          />
+          <span class="error" v-if="errors.borrowerDepartment">{{
+            errors.borrowerDepartment
+          }}</span>
+        </div>
+        <div class="field">
+          <label>指導老師系所(單位)</label>
+          <input
+            v-model="form.teacherDepartment"
+            placeholder="請填寫指導老師系所(單位)"
+            @input="() => validateField('teacherDepartment')"
+          />
+          <span class="error" v-if="errors.teacherDepartment">{{ errors.teacherDepartment }}</span>
+        </div>
+      </div>
+
+      <!-- 借用人Email & 指導老師Email -->
+      <div class="row">
+        <div class="field">
+          <label>借用人Email</label>
+          <input
+            v-model="form.borrowerEmail"
+            placeholder="請填寫借用人Email"
+            @input="() => validateField('borrowerEmail')"
+          />
+          <span class="error" v-if="errors.borrowerEmail">{{ errors.borrowerEmail }}</span>
+        </div>
+        <div class="field">
+          <label>指導老師(單位)Email</label>
+          <input
+            v-model="form.teacherEmail"
+            placeholder="請填寫指導老師(單位)Email"
+            @input="() => validateField('teacherEmail')"
+          />
+          <span class="error" v-if="errors.teacherEmail">{{ errors.teacherEmail }}</span>
+        </div>
+      </div>
+
+      <!-- 借用人聯絡電話 & 指導老師連絡電話 -->
+      <div class="row">
+        <div class="field">
+          <label>借用人聯絡電話</label>
+          <input
+            v-model="form.borrowerPhone"
+            placeholder="請填寫借用人聯絡電話"
+            @input="() => validateField('borrowerPhone')"
+          />
+          <span class="error" v-if="errors.borrowerPhone">{{ errors.borrowerPhone }}</span>
+        </div>
+        <div class="field">
+          <label>指導老師(單位)聯絡電話</label>
+          <input
+            v-model="form.teacherPhone"
+            placeholder="請填寫指導老師(單位)聯絡電話"
+            @input="() => validateField('teacherPhone')"
+          />
+          <span class="error" v-if="errors.teacherPhone">{{ errors.teacherPhone }}</span>
         </div>
       </div>
     </div>
 
-    <!-- 顯示多次借用的額外選項 -->
-    <div v-if="form.borrowType === '多次借用'" class="row">
-      <div class="field">
-        <label>頻率</label>
-        <select
-          v-model="form.repeatType"
-          @change="() => validateField('repeatType')"
-          :style="{ color: form.repeatType === '' ? '#6c6c6c' : '#000' }"
-        >
-          <option value="">請選擇頻率</option>
-          <option value="每天">每天</option>
-          <option value="每周">每周</option>
-        </select>
-        <span class="error" v-if="errors.repeatType">{{ errors.repeatType }}</span>
-      </div>
-
-      <div class="field">
-        <label>起始日期</label>
-        <input
-          type="date"
-          v-model="form.multiStartDate"
-          @input="() => validateField('multiStartDate')"
-          :style="{ color: form.multiStartDate === '' ? '#6c6c6c' : '#000' }"
-        />
-        <span class="error" v-if="errors.multiStartDate">{{ errors.multiStartDate }}</span>
-      </div>
-
-      <div class="field">
-        <label>結束日期</label>
-        <input
-          type="date"
-          v-model="form.multiEndDate"
-          @input="() => validateField('multiEndDate')"
-          :style="{ color: form.multiEndDate === '' ? '#6c6c6c' : '#000' }"
-        />
-        <span class="error" v-if="errors.multiEndDate">{{ errors.multiEndDate }}</span>
-      </div>
-    </div>
-
-    <!-- 日期 & 時間 -->
-    <div class="row">
-      <!-- 單次借用時顯示選擇日期 -->
-      <div class="field" v-if="form.borrowType !== '多次借用'">
-        <label>選擇日期</label>
-        <input
-          type="date"
-          v-model="form.date"
-          :style="{ color: form.date === '' ? '#6c6c6c' : '#000' }"
-          @input="() => validateField('date')"
-        />
-        <span class="error" v-if="errors.date">{{ errors.date }}</span>
-      </div>
-
-      <!-- 活動時間 -->
-      <div class="field">
-        <label>活動時間(起)</label>
-        <select
-          v-model="form.startTime"
-          @change="() => validateField('startTime')"
-          :style="{ color: form.startTime === '' ? '#6c6c6c' : '#000' }"
-        >
-          <option value="">請選取活動開始時段</option>
-          <option value="0810-0900">第 1 節 0810-0900</option>
-          <option value="0910-1000">第 2 節 0910-1000</option>
-          <option value="1010-1100">第 3 節 1010-1100</option>
-          <option value="1110-1200">第 4 節 1110-1200</option>
-          <option value="1210-1300">第 5 節 1210-1300</option>
-          <option value="1310-1400">第 6 節 1310-1400</option>
-          <option value="1410-1500">第 7 節 1410-1500</option>
-          <option value="1510-1600">第 8 節 1510-1600</option>
-          <option value="1610-1700">第 9 節 1610-1700</option>
-          <option value="1710-1800">第 10 節 1710-1800</option>
-          <option value="1810-1900">第 11 節 1810-1900</option>
-          <option value="1910-2000">第 12 節 1910-2000</option>
-          <option value="2010-2100">第 13 節 2010-2100</option>
-          <option value="2110-2200">第 14 節 2110-2200</option>
-        </select>
-        <span class="error" v-if="errors.startTime">{{ errors.startTime }}</span>
-      </div>
-      <div class="field">
-        <label>活動時間(迄)</label>
-        <select
-          v-model="form.endTime"
-          @change="() => validateField('endTime')"
-          :style="{ color: form.endTime === '' ? '#6c6c6c' : '#000' }"
-        >
-          <option value="">請選取活動結束時段</option>
-          <option value="0810-0900">第 1 節 0810-0900</option>
-          <option value="0910-1000">第 2 節 0910-1000</option>
-          <option value="1010-1100">第 3 節 1010-1100</option>
-          <option value="1110-1200">第 4 節 1110-1200</option>
-          <option value="1210-1300">第 5 節 1210-1300</option>
-          <option value="1310-1400">第 6 節 1310-1400</option>
-          <option value="1410-1500">第 7 節 1410-1500</option>
-          <option value="1510-1600">第 8 節 1510-1600</option>
-          <option value="1610-1700">第 9 節 1610-1700</option>
-          <option value="1710-1800">第 10 節 1710-1800</option>
-          <option value="1810-1900">第 11 節 1810-1900</option>
-          <option value="1910-2000">第 12 節 1910-2000</option>
-          <option value="2010-2100">第 13 節 2010-2100</option>
-          <option value="2110-2200">第 14 節 2110-2200</option>
-        </select>
-        <span class="error" v-if="errors.endTime">{{ errors.endTime }}</span>
-      </div>
-    </div>
-
-    <!-- 活動內容 -->
-    <div class="field">
-      <label>活動內容說明</label>
-      <textarea
-        v-model="form.description"
-        placeholder="請填寫活動內容說明"
-        @input="() => validateField('description')"
-      ></textarea>
-      <span class="error" v-if="errors.description">{{ errors.description }}</span>
+    <!-- 導航按鈕 -->
+    <div class="navigation-buttons">
+      <button v-if="currentStage > 1" @click="prevStage" class="btn-prev">上一步</button>
+      <button v-if="currentStage < 3" @click="nextStage" class="btn-next">下一步</button>
+      <button v-if="currentStage === 3" @click="submitForm" class="btn-submit">送出申請</button>
     </div>
   </div>
-
-  <div class="form-container2">
-    <h1>基本資料</h1>
-    <hr style="width: 96%; margin: 0 auto" />
-
-    <!-- 借用人姓名 & 指導老師姓名 -->
-    <div class="row">
-      <div class="field">
-        <label>借用人姓名</label>
-        <!-- v-model的意思是雙向綁定，當輸入框的值改變時，form.eventName也會隨之改變 -->
-        <input
-          v-model="form.borrowerName"
-          placeholder="請填寫借用人姓名"
-          @input="() => validateField('borrowerName')"
-        />
-        <span class="error" v-if="errors.borrowerName">{{ errors.borrowerName }}</span>
-      </div>
-
-      <div class="field">
-        <label>指導老師姓名(單位代表)</label>
-        <input
-          v-model="form.teacherName"
-          placeholder="請填寫指導老師姓名"
-          @input="() => validateField('teacherName')"
-        />
-        <span class="error" v-if="errors.teacherName">{{ errors.teacherName }}</span>
-      </div>
-    </div>
-
-    <!-- 借用人系級/服務單位 & 指導老師系所(單位) -->
-    <div class="row">
-      <div class="field">
-        <label>借用人系級/服務單位</label>
-        <input
-          v-model="form.borrowerDepartment"
-          placeholder="請填寫借用人系級/服務單位"
-          @input="() => validateField('borrowerDepartment')"
-        />
-        <span class="error" v-if="errors.borrowerDepartment">{{ errors.borrowerDepartment }}</span>
-      </div>
-      <div class="field">
-        <label>指導老師系所(單位)</label>
-        <input
-          v-model="form.teacherDepartment"
-          placeholder="請填寫指導老師系所(單位)"
-          @input="() => validateField('teacherDepartment')"
-        />
-        <span class="error" v-if="errors.teacherDepartment">{{ errors.teacherDepartment }}</span>
-      </div>
-    </div>
-
-    <!-- 借用人Email & 指導老師Email -->
-    <div class="row">
-      <div class="field">
-        <label>借用人Email</label>
-        <input
-          v-model="form.borrowerEmail"
-          placeholder="請填寫借用人Email"
-          @input="() => validateField('borrowerEmail')"
-        />
-        <span class="error" v-if="errors.borrowerEmail">{{ errors.borrowerEmail }}</span>
-      </div>
-      <div class="field">
-        <label>指導老師(單位)Email</label>
-        <input
-          v-model="form.teacherEmail"
-          placeholder="請填寫指導老師(單位)Email"
-          @input="() => validateField('teacherEmail')"
-        />
-        <span class="error" v-if="errors.teacherEmail">{{ errors.teacherEmail }}</span>
-      </div>
-    </div>
-
-    <!-- 借用人聯絡電話 & 指導老師連絡電話 -->
-    <div class="row">
-      <div class="field">
-        <label>借用人聯絡電話</label>
-        <input
-          v-model="form.borrowerPhone"
-          placeholder="請填寫借用人聯絡電話"
-          @input="() => validateField('borrowerPhone')"
-        />
-        <span class="error" v-if="errors.borrowerPhone">{{ errors.borrowerPhone }}</span>
-      </div>
-      <div class="field">
-        <label>指導老師(單位)聯絡電話</label>
-        <input
-          v-model="form.teacherPhone"
-          placeholder="請填寫指導老師(單位)聯絡電話"
-          @input="() => validateField('teacherPhone')"
-        />
-        <span class="error" v-if="errors.teacherPhone">{{ errors.teacherPhone }}</span>
-      </div>
-    </div>
-  </div>
-  <!-- 按鈕 -->
-  <button @click="submitForm">送出申請</button>
 </template>
 
-<style>
-body {
-  background-color: #f6f6f5; /* 頁面背景顏色 */
-}
-</style>
-
 <style scoped>
+.borrow-view {
+  max-width: 1000px;
+  margin: 40px auto;
+  color: #666;
+}
+.borrow-view h1 {
+  font-size: 30px;
+  margin-bottom: 20px;
+}
+
 .error {
   color: red;
   font-size: 15px;
   margin-top: 5px;
 }
+
+/* 階段指示器樣式 */
+.stage-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 40px 0;
+  padding: 20px;
+}
+
+.stage-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stage-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.stage-item.active .stage-number {
+  background-color: #c2ddff;
+  color: #333;
+}
+
+.stage-item.completed .stage-number {
+  background-color: #4caf50;
+  color: white;
+}
+
+.stage-title {
+  font-size: 14px;
+  color: #888;
+  font-weight: bold;
+}
+
+.stage-item.active .stage-title {
+  color: #333;
+}
+
+.stage-item.completed .stage-title {
+  color: #4caf50;
+}
+
+.stage-divider {
+  width: 80px;
+  height: 2px;
+  background-color: #e0e0e0;
+  margin: 0 20px;
+  margin-bottom: 25px;
+}
+
 .form-container {
   margin: auto;
   margin-top: 60px;
@@ -512,26 +694,10 @@ body {
   max-width: 1130px;
   font-family: Arial, sans-serif;
 }
-.form-container2 {
-  margin: auto;
-  margin-top: 80px;
-  background-color: #ffffff;
-  border: 1px solid #eee;
-  border-radius: 20px;
-  padding: 15px 15px 25px 15px;
-  max-width: 1130px;
-  font-family: Arial, sans-serif;
-}
-
-h1 {
-  color: #555;
-  margin-bottom: 5px;
-  padding: 0 0 10px 30px;
-}
 
 .row {
-  display: flex; /* 調整為flex布局 */
-  margin-bottom: 15px; /* 調整底部間距 */
+  display: flex;
+  margin-bottom: 15px;
 }
 
 .field {
@@ -542,10 +708,8 @@ h1 {
 }
 
 label {
-  /* 字大一點&顏色淺一點 */
   font-size: 25px;
   color: #777;
-  /* 字體加粗 */
   font-weight: bold;
   margin-bottom: 5px;
 }
@@ -553,13 +717,42 @@ label {
 input {
   height: 30px;
   background-color: #f0f0f0;
-  /* 字大一點 */
   padding: 10px;
   font-size: 21px;
-  /* 邊框圓一點 */
   border: 1px solid #aaaaaa;
   border-radius: 10px;
-  /* 框長一點 */
+}
+
+input[type='radio'] {
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  transform: scale(1.5);
+  cursor: pointer;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+}
+
+.field label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.field div {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.field div label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+  margin-right: 0;
 }
 select {
   height: 50px;
@@ -582,40 +775,78 @@ textarea {
   border-radius: 10px;
 }
 
-button {
-  display: block; /* 讓按鈕成為區塊元素 */
-  width: 100%;
-  max-width: 1158px; /* 與 .form-container 和 .form-container2 的寬度一致 */
-  margin: 40px auto; /* 上下留空間，並讓按鈕水平置中 */
-  padding: 15px 0; /* 增加按鈕的高度 */
-  background-color: #c2ddff;
-  color: 555;
-  border: none;
-  border-radius: 10px; /* 圓角與容器一致 */
-  font-size: 25px; /* 調整字體大小 */
-  cursor: pointer;
+.navigation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 40px auto;
+  max-width: 1130px;
 }
 
-button:hover {
+.navigation-buttons button {
+  padding: 15px 30px;
+  font-size: 18px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  min-width: 120px;
+}
+
+.btn-prev {
+  background-color: #f0f0f0;
+  color: #666;
+}
+
+.btn-prev:hover {
+  background-color: #e0e0e0;
+}
+
+.btn-next {
+  background-color: #c2ddff;
+  color: #333;
+}
+
+.btn-next:hover {
   background-color: #a7c5eb;
+}
+
+.btn-submit {
+  background-color: #4caf50;
+  color: white;
+}
+
+.btn-submit:hover {
+  background-color: #45a049;
 }
 
 /* 手機板樣式 */
 @media (max-width: 768px) {
-  .form-container,
-  .form-container2 {
-    margin-top: 20px;
-    padding: 10px;
-    max-width: 100%; /* 滿版寬度 */
+  .borrow-view h1 {
+    margin: 20px 15px;
+    font-size: 24px;
   }
 
-  h1 {
-    font-size: 20px;
-    padding: 0 0 10px 10px;
+  .stage-indicator {
+    flex-direction: column;
+    gap: 15px;
+    margin: 20px 0;
+  }
+
+  .stage-divider {
+    width: 2px;
+    height: 30px;
+    margin: 0;
+  }
+
+  .form-container {
+    margin-top: 20px;
+    padding: 10px;
+    max-width: 100%;
   }
 
   .row {
-    flex-direction: column; /* 垂直排列 */
+    flex-direction: column;
     margin-bottom: 10px;
   }
 
@@ -627,6 +858,26 @@ button:hover {
     font-size: 18px;
   }
 
+  /* 手機版單選按鈕樣式 */
+  input[type='radio'] {
+    transform: scale(1.3);
+    margin-right: 6px;
+  }
+
+  .field label {
+    font-size: 18px;
+  }
+
+  /* 手機版單選按鈕容器 */
+  .field div {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .field div label {
+    font-size: 18px;
+  }
+
   input,
   select,
   textarea {
@@ -634,9 +885,16 @@ button:hover {
     padding: 8px;
   }
 
-  button {
-    font-size: 20px;
-    padding: 10px 0;
+  .navigation-buttons {
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 20px;
+  }
+
+  .navigation-buttons button {
+    font-size: 16px;
+    padding: 12px 0;
+    min-width: auto;
   }
 }
 </style>
