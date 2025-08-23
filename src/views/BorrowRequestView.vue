@@ -606,7 +606,7 @@ button:hover {
 
 /* 手機板樣式 */
 @media (max-width: 768px) {
-  .borrow-view h1{
+  .borrow-view h1 {
     margin: 20px 15px;
     font-size: 24px;
   }
