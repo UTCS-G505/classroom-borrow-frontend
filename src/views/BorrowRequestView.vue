@@ -499,7 +499,7 @@ onMounted(() => {
 <style scoped>
 .borrow-view {
   max-width: 1000px;
-  margin: 15px;
+  margin: 40px auto;
   color: #666;
 }
 .borrow-view h1 {
@@ -606,7 +606,7 @@ button:hover {
 
 /* 手機板樣式 */
 @media (max-width: 768px) {
-  .borrow-view h1 {
+  .borrow-view h1{
     margin: 20px 15px;
     font-size: 24px;
   }
