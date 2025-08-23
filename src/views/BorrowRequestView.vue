@@ -499,7 +499,7 @@ onMounted(() => {
 <style scoped>
 .borrow-view {
   max-width: 1000px;
-  margin: 40px auto;
+  margin: 15px;
   color: #666;
 }
 .borrow-view h1 {
