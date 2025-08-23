@@ -751,8 +751,8 @@ h1 {
 
 /* 手機板 RWD */
 @media (max-width: 768px) {
-  .records-view h1 {
-    font-size: 24px;
+  .records-view {
+    margin: 20px 15px;
   }
   .desktop-only {
     display: none;
