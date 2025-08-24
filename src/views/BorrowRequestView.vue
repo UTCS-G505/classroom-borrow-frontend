@@ -627,8 +627,10 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 40px 0;
+  margin: 40px auto;
   padding: 20px;
+  width: 100%;
+  max-width: 600px;
 }
 
 .stage-item {
@@ -636,6 +638,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   text-align: center;
+  flex: 0 0 auto;
 }
 
 .stage-number {
@@ -666,6 +669,8 @@ onMounted(() => {
   font-size: 14px;
   color: #888;
   font-weight: bold;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .stage-item.active .stage-title {
@@ -677,11 +682,13 @@ onMounted(() => {
 }
 
 .stage-divider {
-  width: 80px;
+  flex: 1;
   height: 2px;
   background-color: #e0e0e0;
-  margin: 0 20px;
+  margin: 0 15px;
   margin-bottom: 25px;
+  max-width: 180px;
+  min-width: 30px;
 }
 
 .form-container {
@@ -828,15 +835,33 @@ textarea {
   }
 
   .stage-indicator {
-    flex-direction: column;
-    gap: 15px;
-    margin: 20px 0;
+    margin: 20px auto;
+    padding: 10px 5px;
+    max-width: 400px;
+  }
+
+  .stage-item {
+    flex: 0 0 auto;
+  }
+
+  .stage-number {
+    width: 35px;
+    height: 35px;
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+
+  .stage-title {
+    font-size: 12px;
+    white-space: nowrap;
+    text-align: center;
   }
 
   .stage-divider {
-    width: 2px;
-    height: 30px;
-    margin: 0;
+    margin: 0 8px;
+    margin-bottom: 18px;
+    max-width: 60px;
+    min-width: 25px;
   }
 
   .form-container {
@@ -895,6 +920,49 @@ textarea {
     font-size: 16px;
     padding: 12px 0;
     min-width: auto;
+  }
+}
+
+/* 平板樣式 */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .stage-indicator {
+    padding: 15px 10px;
+    max-width: 500px;
+  }
+
+  .stage-divider {
+    max-width: 120px;
+    min-width: 30px;
+    margin: 0 10px;
+    margin-bottom: 25px;
+  }
+}
+
+/* 小屏手機樣式 */
+@media (max-width: 480px) {
+  .stage-indicator {
+    margin: 15px auto;
+    padding: 8px 2px;
+    max-width: 300px;
+  }
+
+  .stage-number {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .stage-title {
+    font-size: 10px;
+    text-align: center;
+  }
+
+  .stage-divider {
+    margin: 0 5px;
+    margin-bottom: 15px;
+    max-width: 40px;
+    min-width: 15px;
   }
 }
 </style>
