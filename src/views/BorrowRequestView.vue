@@ -957,7 +957,6 @@ textarea {
   }
 }
 
-/* 小屏手機樣式 */
 @media (max-width: 480px) {
   .stage-indicator {
     margin: 15px auto;
@@ -992,7 +991,6 @@ textarea {
     font-size: 16px !important;
   }
 
-  /* 小屏幕上的導航按鈕 */
   .navigation-buttons {
     gap: 10px;
     padding: 0 15px;
