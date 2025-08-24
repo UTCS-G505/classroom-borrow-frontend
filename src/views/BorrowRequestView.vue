@@ -340,7 +340,7 @@ onMounted(() => {
       <div class="row">
         <div class="field">
           <label>借用類型</label>
-          <div>
+          <div class="radio-group">
             <label>
               <input
                 type="radio"
@@ -755,6 +755,14 @@ input[type='radio'] {
   align-items: center;
 }
 
+.radio-group {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .field div label {
   display: flex;
   align-items: center;
@@ -899,6 +907,14 @@ textarea {
     gap: 10px;
   }
 
+  /* 借用類型單選按鈕保持橫向排列 */
+  .radio-group {
+    flex-direction: row !important;
+    gap: 15px !important;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
   .field div label {
     font-size: 18px;
   }
@@ -963,6 +979,14 @@ textarea {
     margin-bottom: 15px;
     max-width: 40px;
     min-width: 15px;
+  }
+
+  .radio-group {
+    gap: 12px !important;
+  }
+
+  .radio-group label {
+    font-size: 16px !important;
   }
 }
 </style>
