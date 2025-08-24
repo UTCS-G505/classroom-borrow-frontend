@@ -927,15 +927,18 @@ textarea {
   }
 
   .navigation-buttons {
-    flex-direction: column;
-    gap: 10px;
+    flex-direction: row;
+    gap: 15px;
     padding: 0 20px;
+    justify-content: center;
   }
 
   .navigation-buttons button {
     font-size: 16px;
-    padding: 12px 0;
+    padding: 12px 20px;
     min-width: auto;
+    flex: 1;
+    max-width: 150px;
   }
 }
 
@@ -987,6 +990,18 @@ textarea {
 
   .radio-group label {
     font-size: 16px !important;
+  }
+
+  /* 小屏幕上的導航按鈕 */
+  .navigation-buttons {
+    gap: 10px;
+    padding: 0 15px;
+  }
+
+  .navigation-buttons button {
+    font-size: 14px;
+    padding: 10px 15px;
+    max-width: 120px;
   }
 }
 </style>
