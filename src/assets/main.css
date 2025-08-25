@@ -3,6 +3,7 @@ body {
   /* remove padding at the top of navbar */
   margin: 0;
   padding: 0;
+  background-color: #f6f6f5; /* 頁面背景顏色 */
 }
 /* 用 flex 讓 footer 能自然推到底 */
 #app {
