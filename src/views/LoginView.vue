@@ -1,4 +1,5 @@
 <script setup>
+// filepath: d:\VuePractice\vue-LogIn\classroom-borrow-frontend\src\views\LoginView.vue
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -46,7 +47,6 @@ const handleLogin = () => {
     )
     if (user) {
       errorMessage.value = ''
-      alert(`歡迎 ${user.name}！登入成功`)
       router.push('/') // 跳回首頁
       return
     }
@@ -79,16 +79,18 @@ const handleRegister = () => {
     registerErrorMessage.value = '密碼確認不一致'
     return
   }
+
   // 簡單的email格式驗證
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(registerEmail.value)) {
     registerErrorMessage.value = 'Email格式不正確'
     return
   }
-  // 簡單的手機號碼驗證
-  const phoneRegex = /^09\d{8}$/
+
+  // 手機號碼驗證：僅允許包含數字 0123456789
+  const phoneRegex = /^[0-9]+$/
   if (!phoneRegex.test(registerPhone.value)) {
-    registerErrorMessage.value = '請輸入正確的手機號碼格式 (09xxxxxxxx)'
+    registerErrorMessage.value = '手機號碼只能包含數字'
     return
   }
 
@@ -103,8 +105,8 @@ const handleRegister = () => {
   })
 
   registerErrorMessage.value = ''
-  alert(`註冊成功！您現在可以使用「訪客」身分登入系統`)
-  switchToLogin()
+  alert('註冊成功！') // 顯示註冊成功提示
+  switchToLogin() // 註冊成功後切換到登入頁面
 }
 
 const switchToLogin = () => {
@@ -243,7 +245,7 @@ const switchToRegister = () => {
 
         <div class="form-group">
           <label class="label" for="register-phone">手機號碼：</label>
-          <input type="tel" id="register-phone" v-model="registerPhone" placeholder="09xxxxxxxx" />
+          <input type="tel" id="register-phone" v-model="registerPhone" placeholder="請輸入電話號碼" />
         </div>
 
         <div class="form-group">
