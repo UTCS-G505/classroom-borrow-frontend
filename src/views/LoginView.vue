@@ -31,18 +31,18 @@ const handleLogin = () => {
     errorMessage.value = '請填寫所有欄位並選擇身份'
     return
   }
-  
+
   // 管理員登入
   if (username.value === 'admin' && password.value === '1234' && role.value === '管理員') {
     errorMessage.value = ''
     router.push('/') // 跳回首頁
     return
   }
-  
+
   // 檢查註冊用戶登入（訪客身分）
   if (role.value === '訪客') {
-    const user = registeredUsers.value.find(u => 
-      u.username === username.value && u.password === password.value
+    const user = registeredUsers.value.find(
+      (u) => u.username === username.value && u.password === password.value,
     )
     if (user) {
       errorMessage.value = ''
@@ -51,23 +51,30 @@ const handleLogin = () => {
       return
     }
   }
-  
+
   errorMessage.value = '帳號或密碼錯誤'
 }
 
 const handleRegister = () => {
-  if (!registerUsername.value || !registerPassword.value || !confirmPassword.value || 
-      !registerServiceUnit.value || !registerName.value || !registerPhone.value || !registerEmail.value) {
+  if (
+    !registerUsername.value ||
+    !registerPassword.value ||
+    !confirmPassword.value ||
+    !registerServiceUnit.value ||
+    !registerName.value ||
+    !registerPhone.value ||
+    !registerEmail.value
+  ) {
     registerErrorMessage.value = '請填寫所有欄位'
     return
   }
-  
+
   // 檢查帳號是否已存在
-  if (registeredUsers.value.some(u => u.username === registerUsername.value)) {
+  if (registeredUsers.value.some((u) => u.username === registerUsername.value)) {
     registerErrorMessage.value = '此帳號已存在，請選擇其他帳號'
     return
   }
-  
+
   if (registerPassword.value !== confirmPassword.value) {
     registerErrorMessage.value = '密碼確認不一致'
     return
@@ -84,7 +91,7 @@ const handleRegister = () => {
     registerErrorMessage.value = '請輸入正確的手機號碼格式 (09xxxxxxxx)'
     return
   }
-  
+
   // 新增用戶到註冊清單
   registeredUsers.value.push({
     username: registerUsername.value,
@@ -92,9 +99,9 @@ const handleRegister = () => {
     name: registerName.value,
     serviceUnit: registerServiceUnit.value,
     phone: registerPhone.value,
-    email: registerEmail.value
+    email: registerEmail.value,
   })
-  
+
   registerErrorMessage.value = ''
   alert(`註冊成功！您現在可以使用「訪客」身分登入系統`)
   switchToLogin()
@@ -171,7 +178,9 @@ const switchToRegister = () => {
 
         <div class="button-group">
           <button type="submit" class="login-button">登入 Sign In</button>
-          <button type="button" class="register-button" @click="switchToRegister">註冊 Register</button>
+          <button type="button" class="register-button" @click="switchToRegister">
+            註冊 Register
+          </button>
         </div>
 
         <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
@@ -234,12 +243,7 @@ const switchToRegister = () => {
 
         <div class="form-group">
           <label class="label" for="register-phone">手機號碼：</label>
-          <input
-            type="tel"
-            id="register-phone"
-            v-model="registerPhone"
-            placeholder="09xxxxxxxx"
-          />
+          <input type="tel" id="register-phone" v-model="registerPhone" placeholder="09xxxxxxxx" />
         </div>
 
         <div class="form-group">
@@ -283,7 +287,8 @@ const switchToRegister = () => {
   align-items: flex-start;
 }
 
-.login-container, .register-container {
+.login-container,
+.register-container {
   width: 100%;
   max-width: 600px; /* 放大容器寬度 */
   padding: 40px 50px; /* 增加 padding */
@@ -320,7 +325,8 @@ const switchToRegister = () => {
   margin-bottom: 20px;
 }
 
-input, .role-dropdown {
+input,
+.role-dropdown {
   width: 100%;
   padding: 14px; /* 增加 padding */
   border: 1px solid #dcdcdc;
@@ -330,7 +336,8 @@ input, .role-dropdown {
   color: #333;
 }
 
-input:focus, .role-dropdown:focus {
+input:focus,
+.role-dropdown:focus {
   outline: none;
   border-color: #4a90e2;
   box-shadow: 0 0 4px rgba(74, 144, 226, 0.5);
@@ -459,15 +466,16 @@ input::placeholder {
   .page-wrapper {
     padding: 20px;
   }
-  
-  .login-container, .register-container {
+
+  .login-container,
+  .register-container {
     padding: 30px 25px;
   }
-  
+
   .role-selection {
     flex-direction: column;
   }
-  
+
   .role-selection button {
     width: 100%;
     margin-bottom: 8px;
