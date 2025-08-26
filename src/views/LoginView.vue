@@ -245,7 +245,12 @@ const switchToRegister = () => {
 
         <div class="form-group">
           <label class="label" for="register-phone">手機號碼：</label>
-          <input type="tel" id="register-phone" v-model="registerPhone" placeholder="請輸入電話號碼" />
+          <input
+            type="tel"
+            id="register-phone"
+            v-model="registerPhone"
+            placeholder="請輸入電話號碼"
+          />
         </div>
 
         <div class="form-group">
