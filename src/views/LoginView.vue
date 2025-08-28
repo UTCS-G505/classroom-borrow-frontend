@@ -397,13 +397,15 @@ input:focus,
 /* 調整按鈕容器 */
 .button-group {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column; /* 改為垂直排列 */
+  align-items: center; /* 置中對齊 */
+  gap: 15px; /* 按鈕間距 */
   margin-top: 30px; /* 增加間距 */
 }
 
 /* 登入按鈕 */
 .login-button {
-  width: 65%; /* 調整寬度以適應一左一右布局 */
+  width: 100%; /* 填滿寬度 */
   padding: 14px; /* 增加 padding */
   font-size: 18px; /* 放大字體 */
   background-color: #a6c8ff;
@@ -419,18 +421,19 @@ input:focus,
 
 /* 註冊按鈕 */
 .register-button {
-  width: 34%; /* 調整寬度以適應一左一右布局 */
-  padding: 14px; /* 增加 padding */
+  padding: 14px 24px; /* 調整 padding */
   font-size: 18px; /* 放大字體 */
-  background-color: white;
+  background-color: transparent; /* 透明背景 */
   color: #4a90e2;
-  border: 1px solid #4a90e2;
+  border: none; /* 移除邊框 */
   border-radius: 8px;
   cursor: pointer;
+  text-decoration: underline; /* 加上底線讓它看起來像連結 */
 }
 
 .register-button:hover {
-  background-color: #e6f0ff;
+  background-color: #f0f7ff; /* 懸停時淡藍色背景 */
+  text-decoration: none; /* 懸停時移除底線 */
 }
 
 .error {
