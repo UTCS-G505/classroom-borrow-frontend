@@ -3,7 +3,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import BorrowRequestView from '../views/BorrowRequestView.vue'
 import introductionPage from '../views/introductionPage.vue'
 import HomePage from '../views/HomePage.vue'
-import AdminDashboard from '../views/AdminDashboard.vue'
 
 const routes = [
   {
@@ -25,11 +24,6 @@ const routes = [
     path: '/', // 首頁(根目錄)
     name: 'HomePage_root',
     component: HomePage,
-  },
-  {
-    path: '/admin', // 你的網址
-    name: 'AdminDashboard',
-    component: AdminDashboard,
   },
 ]
 
