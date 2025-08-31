@@ -260,7 +260,7 @@ onMounted(() => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(item, i) in records" :key="i">
+          <tr v-for="item in records" :key="item.id">
             <td>{{ item.date }}</td>
             <td>{{ item.room }}</td>
             <td>{{ item.time }}</td>
@@ -299,7 +299,7 @@ onMounted(() => {
 
       <!-- 手機版 card -->
       <div class="mobile-only">
-        <div class="record-card" v-for="(item, i) in records" :key="i">
+        <div class="record-card" v-for="item in records" :key="item.id">
           <div class="card-header">
             <div class="room">{{ item.room }}</div>
             <span :class="['status', statusClass(item.status)]">{{ item.status }}</span>
