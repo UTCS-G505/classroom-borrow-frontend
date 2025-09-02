@@ -3,7 +3,11 @@ import { createRouter, createWebHistory } from 'vue-router'
 import BorrowRequestView from '../views/BorrowRequestView.vue'
 import introductionPage from '../views/introductionPage.vue'
 import HomePage from '../views/HomePage.vue'
+<<<<<<< HEAD
 import LoginView from '@/views/LoginView.vue'
+=======
+import recordsView from '../views/recordsView.vue'
+>>>>>>> 5d9d6f8f6db628ba9b82fd9719182c248d49788b
 
 const routes = [
   {
@@ -27,9 +31,15 @@ const routes = [
     component: HomePage,
   },
   {
+<<<<<<< HEAD
     path: '/login', // 登入
     name: 'Login',
     component: LoginView,
+=======
+    path: '/record', // 借用紀錄
+    name: 'RecordsView',
+    component: recordsView,
+>>>>>>> 5d9d6f8f6db628ba9b82fd9719182c248d49788b
   },
 ]
 
