@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import BorrowRequestView from '../views/BorrowRequestView.vue'
 import introductionPage from '../views/introductionPage.vue'
 import HomePage from '../views/HomePage.vue'
+import recordsView from '../views/recordsView.vue'
 
 const routes = [
   {
@@ -24,6 +25,11 @@ const routes = [
     path: '/', // 首頁(根目錄)
     name: 'HomePage_root',
     component: HomePage,
+  },
+  {
+    path: '/record', // 借用紀錄
+    name: 'RecordsView',
+    component: recordsView,
   },
 ]
 
