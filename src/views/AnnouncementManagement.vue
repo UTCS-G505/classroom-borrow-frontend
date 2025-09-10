@@ -77,16 +77,23 @@ watch(
   { deep: true },
 )
 
+//發布公告確認用
+const showPublishModal = ref(false)
+
 //新增公告
 function publishAnnouncement() {
   if (!newContent.value.trim()) return
+  showPublishModal.value = true
+}
 
+function confirmPublish() {
   rules.value.push({
-    id: Date.now(), // 使用時間戳當唯一 key
+    id: Date.now(),
     content: newContent.value,
     addition: '',
   })
   newContent.value = ''
+  showPublishModal.value = false
 }
 
 // 刪除確認用的狀態
@@ -135,7 +142,19 @@ function closeModal() {
     </div>
   </section>
 
-  <!-- Modal -->
+  <!-- 發布公告確認 Modal -->
+  <div v-if="showPublishModal" class="modalOverlay">
+    <div class="modalBox">
+      <h3>確認發布公告？</h3>
+      <p class="modalContent">{{ newContent }}</p>
+      <div>
+        <button class="cancelBtn" @click="showPublishModal = false">取消</button>
+        <button class="confirmBtn" @click="confirmPublish">發布</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 刪除公告確認 Modal -->
   <div v-if="showModal" class="modalOverlay">
     <div class="modalBox">
       <h3>確認刪除公告？</h3>
