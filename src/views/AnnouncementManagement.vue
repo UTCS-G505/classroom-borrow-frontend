@@ -140,7 +140,7 @@ function closeModal() {
     <div class="modalBox">
       <h3>確認刪除公告？</h3>
       <p class="modalContent">{{ pendingDeleteContent }}</p>
-      <div class="modalActions">
+      <div>
         <button class="cancelBtn" @click="closeModal">取消</button>
         <button class="confirmBtn" @click="deleteAnnouncement">刪除</button>
       </div>

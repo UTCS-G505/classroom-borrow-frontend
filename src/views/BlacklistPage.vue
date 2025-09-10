@@ -1,4 +1,6 @@
 <script setup>
+import { ref } from 'vue'
+
 const { blacklist } = defineProps({
   blacklist: {
     type: Array,
@@ -7,6 +9,31 @@ const { blacklist } = defineProps({
 })
 
 const emit = defineEmits(['deleteBlacklist'])
+
+// 控制 modal
+const showModal = ref(false)
+const deleteIndex = ref(null)
+
+//打開確認框
+const openConfirm = (index) => {
+  deleteIndex.value = index
+  showModal.value = true
+}
+
+//確認刪除
+const confirmDelete = () => {
+  if (deleteIndex.value != null) {
+    emit('deleteBlacklist', deleteIndex.value)
+  }
+
+  closeModal()
+}
+
+//取消刪除
+const closeModal = () => {
+  showModal.value = false
+  deleteIndex.value = null
+}
 </script>
 
 <template>
@@ -18,7 +45,7 @@ const emit = defineEmits(['deleteBlacklist'])
           <th>申請人</th>
           <th>教室</th>
           <th>時間</th>
-          <th>用途</th>
+          <th>備註</th>
           <th>操作</th>
         </tr>
       </thead>
@@ -30,7 +57,7 @@ const emit = defineEmits(['deleteBlacklist'])
           <td>{{ item.date }}</td>
           <td>{{ item.reason }}</td>
           <td>
-            <button @click="emit('deleteBlacklist', index)">刪除</button>
+            <button @click="openConfirm(index)">刪除</button>
           </td>
         </tr>
       </tbody>
@@ -38,6 +65,23 @@ const emit = defineEmits(['deleteBlacklist'])
 
     <p v-else>目前沒有黑名單資料</p>
   </section>
+
+  <!-- Modal -->
+  <div v-if="showModal" class="modal-overlay">
+    <div class="modal">
+      <p>確定要刪除此黑名單項目?</p>
+      <!-- 顯示要刪除的項目細節 -->
+      <div v-if="deleteIndex !== null" class="modal-content">
+        <p style="color: #555; margin-top: 10px">
+          【申請人：{{ blacklist[deleteIndex].applicant }}】
+        </p>
+      </div>
+      <div class="modal-actions">
+        <button class="cancel" @click="closeModal">取消</button>
+        <button class="confirm" @click="confirmDelete">確定</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -77,6 +121,49 @@ button {
   color: #666;
   cursor: pointer;
   margin-right: 5px;
+}
+
+button.confirm {
+  background-color: #e74c3c;
+  color: #fff;
+}
+
+button.confirm:hover {
+  background-color: #c0392b;
+}
+
+button.cancel {
+  background-color: #ddd;
+  margin-right: 20px;
+  margin-top: 20px;
+}
+
+button.cancel:hover {
+  background-color: #bbb;
+}
+
+/* Modal 樣式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  padding: 30px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 300px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  text-align: center;
 }
 
 @media (max-width: 768px) {
