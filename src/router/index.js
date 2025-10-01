@@ -39,7 +39,7 @@ const routes = [
     component: LoginView,
   },
   {
-    path: '/status', // 教室使用情況
+    path: '/borrow_status', // 教室使用情況
     name: 'StatusPage',
     component: StatusPage,
   },
