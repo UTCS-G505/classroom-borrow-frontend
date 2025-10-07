@@ -407,9 +407,33 @@ button:hover {
   }
 
   .classroomImage img {
-    width: 100%;
-    max-height: 300px;
-    object-fit: cover; /* 保持圖片比例 */
+    width: 100%; /* 佔滿容器寬度 */
+    height: auto; /* 保持比例 */
+    max-height: 300px; /* 可以調整手機最大高度 */
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  /* 調整左右按鈕大小和位置 */
+  .imgPrev,
+  .imgNext {
+    width: 30px;
+    height: 30px;
+    font-size: 20px;
+  }
+
+  .imgPrev {
+    left: 5px;
+  }
+  .imgNext {
+    right: 5px;
+  }
+
+  /* 頁數顯示縮小 */
+  .imgCounter {
+    font-size: 12px;
+    padding: 3px 6px;
+    bottom: 5px;
   }
 
   .classroomInfo h3 {
