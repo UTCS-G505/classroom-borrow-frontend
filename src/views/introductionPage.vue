@@ -2,7 +2,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-// 可借用教室資料
 const classrooms = ref([
   {
     id: 'G312',
@@ -10,7 +9,7 @@ const classrooms = ref([
     location: '公誠樓 3 樓',
     equipment: '白板、投影幕、桌椅',
     description: '開會...',
-    img: '/picture/G312.png',
+    img: ['/picture/G312.jpg'],
     seatMap: '/downloads/G312-seatmap.pdf',
   },
   {
@@ -19,7 +18,15 @@ const classrooms = ref([
     location: '公誠樓 3 樓',
     equipment: '白板、投影幕、桌椅',
     description: '可容納 60 人....。',
-    img: '/picture/G313.png',
+    img: [
+      '/picture/G313-1.jpg',
+      '/picture/G313-2.jpg',
+      '/picture/G313-3.jpg',
+      '/picture/G313-4.jpg',
+      '/picture/G313-5.jpg',
+      '/picture/G313-6.jpg',
+      '/picture/G313-7.jpg',
+    ],
     seatMap: '/downloads/G313-seatmap.pdf',
   },
   {
@@ -28,7 +35,7 @@ const classrooms = ref([
     location: '公誠樓 3 樓',
     equipment: '白板、投影幕、桌椅',
     description: '可容納 60 人....',
-    img: '/picture/G314.png',
+    img: ['/picture/G314.jpg'],
     seatMap: '/downloads/G314-seatmap.pdf',
   },
   {
@@ -37,7 +44,7 @@ const classrooms = ref([
     location: '公誠樓 3 樓',
     equipment: '50 台電腦、白板、投影幕',
     description: '可容納 50 人....',
-    img: '/picture/G315.png',
+    img: ['/picture/G315.jpg'],
     seatMap: '/downloads/G315-seatmap.pdf',
   },
   {
@@ -46,7 +53,7 @@ const classrooms = ref([
     location: '公誠樓 3 樓',
     equipment: '50 台電腦、白板、投影幕',
     description: '可容納 50 人....',
-    img: '/picture/G316.png',
+    img: ['/picture/G316.jpg'],
     seatMap: '/downloads/G316-seatmap.pdf',
   },
   {
@@ -55,7 +62,7 @@ const classrooms = ref([
     location: '公誠樓 5 樓',
     equipment: '白板、投影幕、桌椅',
     description: '開會...',
-    img: '/picture/G501.png',
+    img: ['/picture/G501.jpg'],
     seatMap: '/downloads/G501-seatmap.pdf',
   },
   {
@@ -64,7 +71,7 @@ const classrooms = ref([
     location: '公誠樓 5 樓',
     equipment: '書架、閱覽桌椅',
     description: '讀書、討論...',
-    img: '/picture/G508.png',
+    img: ['/picture/G508.jpg'],
     seatMap: '/downloads/G508-seatmap.pdf',
   },
   {
@@ -73,7 +80,7 @@ const classrooms = ref([
     location: '公誠樓 5 樓',
     equipment: 'Mac 電腦、白板、投影幕',
     description: '可容納40人...',
-    img: '/picture/G509.png',
+    img: ['/picture/G509.jpg'],
     seatMap: '/downloads/G509-seatmap.pdf',
   },
   {
@@ -82,10 +89,27 @@ const classrooms = ref([
     location: '公誠樓 5 樓',
     equipment: '50 台電腦、白板、投影幕',
     description: '可容納 50 人....',
-    img: '/picture/G516.png',
+    img: ['/picture/G516.jpg'],
     seatMap: '/downloads/G516-seatmap.pdf',
   },
 ])
+
+// 儲存每個教室目前圖片索引
+const currentImageIndex = ref({}) // { 'G312': 0, 'G313': 0, ... }
+
+function nextImage(roomId, imgLength) {
+  if (!(roomId in currentImageIndex.value)) {
+    currentImageIndex.value[roomId] = 0
+  }
+  currentImageIndex.value[roomId] = (currentImageIndex.value[roomId] + 1) % imgLength
+}
+
+function prevImage(roomId, imgLength) {
+  if (!(roomId in currentImageIndex.value)) {
+    currentImageIndex.value[roomId] = 0
+  }
+  currentImageIndex.value[roomId] = (currentImageIndex.value[roomId] - 1 + imgLength) % imgLength
+}
 
 //樓層平面圖資料
 const floorPlans = ref([
@@ -134,8 +158,36 @@ function goToBorrowPage(roomId) {
 
     <!--各教室介紹區塊-->
     <div class="classroomIntro" v-for="room in classrooms" :key="room.id" :id="room.id">
-      <div class="classroomImage">
+      <!-- <div class="classroomImage">
         <img :src="room.img" :alt="room.name" />
+      </div> -->
+
+      <div class="classroomImage">
+        <img
+          :src="Array.isArray(room.img) ? room.img[currentImageIndex[room.id] || 0] : room.img"
+          :alt="room.name"
+        />
+
+        <!-- 左右切換按鈕 -->
+        <button
+          v-if="Array.isArray(room.img) && room.img.length > 1"
+          class="imgPrev"
+          @click="prevImage(room.id, room.img.length)"
+        >
+          ‹
+        </button>
+        <button
+          v-if="Array.isArray(room.img) && room.img.length > 1"
+          class="imgNext"
+          @click="nextImage(room.id, room.img.length)"
+        >
+          ›
+        </button>
+
+        <!-- 頁數顯示 -->
+        <div v-if="Array.isArray(room.img) && room.img.length > 1" class="imgCounter">
+          {{ (currentImageIndex[room.id] || 0) + 1 }} / {{ room.img.length }}
+        </div>
       </div>
 
       <div class="classroomInfo">
@@ -217,7 +269,7 @@ button:hover {
   background-color: #eae8e6;
 }
 
-.classroomImage {
+/* .classroomImage {
   flex: 2;
 }
 
@@ -225,6 +277,64 @@ button:hover {
   width: 100%;
   height: auto;
   max-height: 450px;
+} */
+
+.classroomImage {
+  flex: 2;
+  position: relative;
+}
+
+.classroomImage img {
+  width: 600px;
+  height: 400px;
+  object-fit: cover;
+  display: block;
+}
+
+.imgPrev,
+.imgNext {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.5); /* 淡白色背景 */
+  color: #555; /* 深灰色箭頭 */
+  border: none;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background-color 0.3s,
+    transform 0.2s;
+}
+
+.imgPrev:hover,
+.imgNext:hover {
+  background-color: rgba(255, 255, 255, 0.8); /* 滑鼠懸停稍亮 */
+}
+
+.imgPrev {
+  left: 10px;
+}
+.imgNext {
+  right: 20px;
+}
+
+.imgCounter {
+  position: absolute;
+  bottom: 10px; /* 距離圖片底部 */
+  right: 50%; /* 水平置中 */
+  transform: translateX(50%);
+  background-color: rgba(255, 255, 255, 0.5); /* 半透明背景 */
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: bold;
 }
 
 .classroomInfo {
