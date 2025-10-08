@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+// 教室資料
 const classrooms = ref([
   {
     id: 'G312',
@@ -97,6 +98,7 @@ const classrooms = ref([
 // 儲存每個教室目前圖片索引
 const currentImageIndex = ref({}) // { 'G312': 0, 'G313': 0, ... }
 
+// 下一張圖片
 function nextImage(roomId, imgLength) {
   if (!(roomId in currentImageIndex.value)) {
     currentImageIndex.value[roomId] = 0
@@ -104,6 +106,7 @@ function nextImage(roomId, imgLength) {
   currentImageIndex.value[roomId] = (currentImageIndex.value[roomId] + 1) % imgLength
 }
 
+// 上一張圖片
 function prevImage(roomId, imgLength) {
   if (!(roomId in currentImageIndex.value)) {
     currentImageIndex.value[roomId] = 0
@@ -111,13 +114,13 @@ function prevImage(roomId, imgLength) {
   currentImageIndex.value[roomId] = (currentImageIndex.value[roomId] - 1 + imgLength) % imgLength
 }
 
-//樓層平面圖資料
+// 樓層平面圖資料
 const floorPlans = ref([
   { title: '三樓平面圖', img: '/picture/floor3.png' },
   { title: '五樓平面圖', img: '/picture/floor5.png' },
 ])
 
-//點選按鈕，滑動到對應的教室介紹
+// 點選按鈕，滑動到對應的教室介紹
 function scrollToRoom(id) {
   const target = document.getElementById(id)
   if (target) {
@@ -125,6 +128,7 @@ function scrollToRoom(id) {
   }
 }
 
+//導向借用頁面
 const router = useRouter()
 
 function goToBorrowPage(roomId) {
@@ -158,38 +162,51 @@ function goToBorrowPage(roomId) {
 
     <!--各教室介紹區塊-->
     <div class="classroomIntro" v-for="room in classrooms" :key="room.id" :id="room.id">
-      <!-- <div class="classroomImage">
-        <img :src="room.img" :alt="room.name" />
-      </div> -->
-
+      <!-- 圖片輪播區 -->
       <div class="classroomImage">
-        <img
-          :src="Array.isArray(room.img) ? room.img[currentImageIndex[room.id] || 0] : room.img"
-          :alt="room.name"
-        />
+        <div class="carousel-container">
+          <!-- 圖片列 (橫向排列) -->
+          <div
+            class="carousel-track"
+            :style="{
+              transform: `translateX(-${(currentImageIndex[room.id] || 0) * 100}%)`,
+            }"
+          >
+            <div v-for="(imgSrc, index) in room.img" :key="imgSrc" class="carousel-slide">
+              <img :src="imgSrc" :alt="`${room.name} 圖片 ${index + 1}`" />
+            </div>
+          </div>
 
-        <!-- 左右切換按鈕 -->
-        <button
-          v-if="Array.isArray(room.img) && room.img.length > 1"
-          class="imgPrev"
-          @click="prevImage(room.id, room.img.length)"
-        >
-          ‹
-        </button>
-        <button
-          v-if="Array.isArray(room.img) && room.img.length > 1"
-          class="imgNext"
-          @click="nextImage(room.id, room.img.length)"
-        >
-          ›
-        </button>
+          <!-- 左右切換按鈕 -->
+          <button
+            v-if="room.img.length > 1"
+            class="carousel-btn prev"
+            @click="prevImage(room.id, room.img.length)"
+          >
+            ‹
+          </button>
+          <button
+            v-if="room.img.length > 1"
+            class="carousel-btn next"
+            @click="nextImage(room.id, room.img.length)"
+          >
+            ›
+          </button>
 
-        <!-- 頁數顯示 -->
-        <div v-if="Array.isArray(room.img) && room.img.length > 1" class="imgCounter">
-          {{ (currentImageIndex[room.id] || 0) + 1 }} / {{ room.img.length }}
+          <!-- 圖片下方的圓點指示器 -->
+          <div v-if="room.img.length > 1" class="carousel-dots">
+            <span
+              v-for="(img, dotIndex) in room.img"
+              :key="dotIndex"
+              class="dot"
+              :class="{ active: (currentImageIndex[room.id] || 0) === dotIndex }"
+              @click="currentImageIndex[room.id] = dotIndex"
+            ></span>
+          </div>
         </div>
       </div>
 
+      <!-- 教室資訊區 -->
       <div class="classroomInfo">
         <h3>{{ room.name }}</h3>
         <p><strong>位置：</strong>{{ room.location }}</p>
@@ -218,6 +235,7 @@ function goToBorrowPage(roomId) {
   margin-bottom: 25px;
 }
 
+/* 教室按鈕區 */
 .buttonGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -239,6 +257,7 @@ button:hover {
   background-color: #a7c5eb;
 }
 
+/* 樓層平面圖 */
 .floorPlans {
   display: flex;
   flex-wrap: wrap;
@@ -259,6 +278,7 @@ button:hover {
   width: 100%;
 }
 
+/* 教室介紹  */
 .classroomIntro {
   display: flex;
   align-items: center;
@@ -269,16 +289,7 @@ button:hover {
   background-color: #eae8e6;
 }
 
-/* .classroomImage {
-  flex: 2;
-}
-
-.classroomImage img {
-  width: 100%;
-  height: auto;
-  max-height: 450px;
-} */
-
+/* 教室圖片*/
 .classroomImage {
   flex: 2;
   position: relative;
@@ -291,16 +302,43 @@ button:hover {
   display: block;
 }
 
-.imgPrev,
-.imgNext {
+/* ======== 照片輪播 ======== */
+.carousel-container {
+  position: relative;
+  width: 600px;
+  height: 400px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.8s ease-in-out;
+  width: 100%;
+  height: 100%;
+}
+
+.carousel-slide {
+  min-width: 100%;
+  height: 100%;
+}
+
+.carousel-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ======== 左右按鈕 ======== */
+.carousel-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.5); /* 淡白色背景 */
-  color: #555; /* 深灰色箭頭 */
+  background-color: rgba(255, 255, 255, 0.5);
+  color: #555;
   border: none;
   font-size: 24px;
   display: flex;
@@ -312,31 +350,42 @@ button:hover {
     transform 0.2s;
 }
 
-.imgPrev:hover,
-.imgNext:hover {
-  background-color: rgba(255, 255, 255, 0.8); /* 滑鼠懸停稍亮 */
+.carousel-btn:hover {
+  background-color: rgba(255, 255, 255, 0.8);
 }
 
-.imgPrev {
+.carousel-btn.prev {
   left: 10px;
 }
-.imgNext {
+
+.carousel-btn.next {
   right: 20px;
 }
 
-.imgCounter {
+/* 圖片下方圓點指示器 */
+.carousel-dots {
   position: absolute;
-  bottom: 10px; /* 距離圖片底部 */
-  right: 50%; /* 水平置中 */
-  transform: translateX(50%);
-  background-color: rgba(255, 255, 255, 0.5); /* 半透明背景 */
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: bold;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
 }
 
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.dot.active {
+  background-color: #ffffff;
+}
+
+/* 教室資訊 */
 .classroomInfo {
   flex: 1;
   display: flex;
@@ -368,6 +417,7 @@ button:hover {
   text-decoration: underline;
 }
 
+/* 借用按鈕 */
 .borrowBtn {
   margin-top: 30px;
   background-color: #d9d9d9;
@@ -414,36 +464,19 @@ button:hover {
     border-radius: 8px;
   }
 
-  /* 調整左右按鈕大小和位置 */
-  .imgPrev,
-  .imgNext {
+  .carousel-container {
+    width: 100%;
+    height: auto;
+  }
+
+  .carousel-slide img {
+    height: auto;
+  }
+
+  .carousel-btn {
     width: 30px;
     height: 30px;
-    font-size: 20px;
-  }
-
-  .imgPrev {
-    left: 5px;
-  }
-  .imgNext {
-    right: 5px;
-  }
-
-  /* 頁數顯示縮小 */
-  .imgCounter {
-    font-size: 12px;
-    padding: 3px 6px;
-    bottom: 5px;
-  }
-
-  .classroomInfo h3 {
-    font-size: 24px;
-  }
-
-  .classroomInfo p,
-  .classroomInfo a,
-  .borrowBtn {
-    font-size: 14px;
+    font-size: 18px;
   }
 
   /* 樓層平面圖區塊文字調整 */
