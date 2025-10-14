@@ -17,15 +17,7 @@ const classrooms = ref([
     name: 'G313 普通教室',
     location: '公誠樓 3 樓',
     equipment: '黑板、投影幕、桌椅',
-    img: [
-      '/picture/G313-1.jpg',
-      '/picture/G313-2.jpg',
-      '/picture/G313-3.jpg',
-      '/picture/G313-4.jpg',
-      '/picture/G313-5.jpg',
-      '/picture/G313-6.jpg',
-      '/picture/G313-7.jpg',
-    ],
+    img: ['/picture/G313-1.jpg', '/picture/G313-2.jpg', '/picture/G313-3.jpg'],
     seatMap: '/downloads/G313-seatmap.pdf',
   },
   {
