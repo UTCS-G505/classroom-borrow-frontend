@@ -9,7 +9,6 @@ const classrooms = ref([
     name: 'G312 會議室',
     location: '公誠樓 3 樓',
     equipment: '白板、投影幕、桌椅',
-    description: '開會...',
     img: ['/picture/G312.jpg'],
     seatMap: '/downloads/G312-seatmap.pdf',
   },
@@ -17,8 +16,7 @@ const classrooms = ref([
     id: 'G313',
     name: 'G313 普通教室',
     location: '公誠樓 3 樓',
-    equipment: '白板、投影幕、桌椅',
-    description: '可容納 60 人....。',
+    equipment: '黑板、投影幕、桌椅',
     img: [
       '/picture/G313-1.jpg',
       '/picture/G313-2.jpg',
@@ -34,26 +32,24 @@ const classrooms = ref([
     id: 'G314',
     name: 'G314 普通教室',
     location: '公誠樓 3 樓',
-    equipment: '白板、投影幕、桌椅',
-    description: '可容納 60 人....',
-    img: ['/picture/G314.jpg'],
+    equipment: '黑板、投影幕、桌椅',
+    img: ['/picture/G314-1.jpg', '/picture/G314-2.jpg', '/picture/G314-3.jpg'],
     seatMap: '/downloads/G314-seatmap.pdf',
   },
   {
     id: 'G315',
     name: 'G315 電腦教室',
     location: '公誠樓 3 樓',
-    equipment: '50 台電腦、白板、投影幕',
+    equipment: '電腦、白板、黑板、投影幕',
     description: '可容納 50 人....',
-    img: ['/picture/G315.jpg'],
+    img: ['/picture/G315-1.jpg', '/picture/G315-2.jpg', '/picture/G315-3.jpg'],
     seatMap: '/downloads/G315-seatmap.pdf',
   },
   {
     id: 'G316',
     name: 'G316 電腦教室',
     location: '公誠樓 3 樓',
-    equipment: '50 台電腦、白板、投影幕',
-    description: '可容納 50 人....',
+    equipment: '電腦、白板、黑板、投影幕',
     img: ['/picture/G316.jpg'],
     seatMap: '/downloads/G316-seatmap.pdf',
   },
@@ -62,7 +58,6 @@ const classrooms = ref([
     name: 'G501 會議室',
     location: '公誠樓 5 樓',
     equipment: '白板、投影幕、桌椅',
-    description: '開會...',
     img: ['/picture/G501.jpg'],
     seatMap: '/downloads/G501-seatmap.pdf',
   },
@@ -70,8 +65,7 @@ const classrooms = ref([
     id: 'G508',
     name: 'G508 系圖書室',
     location: '公誠樓 5 樓',
-    equipment: '書架、閱覽桌椅',
-    description: '讀書、討論...',
+    equipment: '書、桌椅、白板、投影幕',
     img: ['/picture/G508.jpg'],
     seatMap: '/downloads/G508-seatmap.pdf',
   },
@@ -80,7 +74,6 @@ const classrooms = ref([
     name: 'G509 IOS教室',
     location: '公誠樓 5 樓',
     equipment: 'Mac 電腦、白板、投影幕',
-    description: '可容納40人...',
     img: ['/picture/G509.jpg'],
     seatMap: '/downloads/G509-seatmap.pdf',
   },
@@ -88,8 +81,7 @@ const classrooms = ref([
     id: 'G516',
     name: 'G516 電腦教室',
     location: '公誠樓 5 樓',
-    equipment: '50 台電腦、白板、投影幕',
-    description: '可容納 50 人....',
+    equipment: '電腦、白板、投影幕',
     img: ['/picture/G516.jpg'],
     seatMap: '/downloads/G516-seatmap.pdf',
   },
@@ -211,7 +203,12 @@ function goToBorrowPage(roomId) {
         <h3>{{ room.name }}</h3>
         <p><strong>位置：</strong>{{ room.location }}</p>
         <p><strong>設備：</strong>{{ room.equipment }}</p>
-        <a :href="room.seatMap" download>下載教室座位表.pdf ⬇</a>
+        <a
+          v-if="!['G508 系圖書室', 'G312 會議室', 'G501 會議室'].includes(room.name)"
+          :href="room.seatMap"
+          download
+          >下載教室座位表.pdf ⬇</a
+        >
         <button class="borrowBtn" @click="goToBorrowPage(room.id)">我要借用</button>
       </div>
     </div>
