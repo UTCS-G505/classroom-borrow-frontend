@@ -35,6 +35,10 @@ const timeSlots = [
 
 const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
 
+// 今天日期 key
+const today = new Date()
+const todayKey = getDateKey(today)
+
 function getWeekDates(weekOffset = 0) {
   const today = new Date()
   const currentDay = today.getDay()
@@ -154,20 +158,34 @@ function gotoIntroductionPage() {
           <table>
             <thead>
               <tr>
-                <th></th>
-                <th v-for="(date, idx) in weekDates" :key="idx">
+                <th class="arrowCell">
+                  <button @click="weekOffset--" class="arrowButton">←</button>
+                </th>
+                <th
+                  v-for="(date, idx) in weekDates"
+                  :key="idx"
+                  :class="{ todayColumn: getDateKey(date) === todayKey }"
+                >
                   <div>{{ weekDays[idx] }}</div>
                   <div class="dateText">{{ formatDate(date) }}</div>
                 </th>
+                <th class="arrowCell">
+                  <button @click="weekOffset++" class="arrowButton">→</button>
+                </th>
               </tr>
             </thead>
+
             <tbody>
               <tr v-for="(time, tIdx) in timeSlots" :key="tIdx">
                 <td class="timeCell">{{ time }}</td>
                 <td
                   v-for="(date, dIdx) in weekDates"
                   :key="dIdx"
-                  :class="['slotCell', { clickable: !schedule[getDateKey(date)]?.[time] }]"
+                  :class="[
+                    'slotCell',
+                    { clickable: !schedule[getDateKey(date)]?.[time] },
+                    { todayColumn: getDateKey(date) === todayKey },
+                  ]"
                   @click="!schedule[getDateKey(date)]?.[time] && handleSlotClick(date, time)"
                 >
                   <div v-if="schedule[getDateKey(date)]?.[time]" class="event">
@@ -178,11 +196,6 @@ function gotoIntroductionPage() {
               </tr>
             </tbody>
           </table>
-        </div>
-
-        <div class="navigation">
-          <button @click="weekOffset--" class="navButton">上一週</button>
-          <button @click="weekOffset++" class="navButton">下一週</button>
         </div>
       </div>
     </section>
@@ -334,13 +347,28 @@ td {
 }
 
 .dateText {
-  font-size: 13px;
+  font-size: 16px;
   color: #999;
+}
+
+/* 🔹 整欄標記「今天」 */
+.todayColumn {
+  background-color: #fafafa !important;
+  position: relative;
+}
+
+/* 在表頭顯示「今天」文字提示 */
+th.todayColumn::after {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 10px;
+  color: #2a5b9e;
 }
 
 .timeCell {
   background-color: #fafafa;
-  font-size: 13px;
+  font-size: 16px;
   color: #666;
   white-space: nowrap;
 }
@@ -387,6 +415,26 @@ td {
   padding: 8px 20px;
   font-size: 14px;
   cursor: pointer;
+}
+
+.arrowCell {
+  width: 40px;
+}
+
+.arrowButton {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: #555;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    transform 0.2s;
+}
+
+.arrowButton:hover {
+  color: #2a5b9e;
+  transform: scale(1.1);
 }
 
 /* 手機版 RWD */
