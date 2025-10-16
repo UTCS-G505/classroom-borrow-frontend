@@ -1,6 +1,9 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
 
 // 可借用教室資料
 const classrooms = ref([
@@ -97,11 +100,19 @@ const floorPlans = ref([
 function scrollToRoom(id) {
   const target = document.getElementById(id)
   if (target) {
-    target.scrollIntoView({ behavior: 'smooth' })
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 }
 
-const router = useRouter()
+// 根據教室情況頁的 roomId，自動滾動到對應區塊
+onMounted(() => {
+  const roomId = route.query.roomId
+  if (roomId) {
+    setTimeout(() => {
+      scrollToRoom(roomId)
+    }, 100)
+  }
+})
 
 function goToBorrowPage(roomId) {
   router.push({
