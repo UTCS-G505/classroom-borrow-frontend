@@ -190,7 +190,8 @@ onMounted(() => {
   border: none;
   cursor: pointer;
   padding: 0;
-  z-index: 10;
+  z-index: 1200;
+  position: relative;
 }
 
 .hamburger-line {

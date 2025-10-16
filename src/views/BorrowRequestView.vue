@@ -1,8 +1,12 @@
 <script setup>
-import { reactive, onMounted } from 'vue'
-import { useRoute } from 'vue-router' // 引入 useRoute
+import { reactive, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router' // 引入 useRoute
 
-const route = useRoute() // 獲取當前路由
+const route = useRoute() // 獲取當前路由->讀取資料
+const router = useRouter() // 獲取路由實例->導航跳轉
+
+// 當前階段 (1, 2, 3)
+const currentStage = ref(1)
 
 const result = reactive({})
 
@@ -151,19 +155,91 @@ const validateField = (field) => {
   return true
 }
 
-const validateAllFields = () => {
+// 階段 1 的驗證函數
+const validateStage1 = () => {
+  const stage1Fields = ['classroom', 'peopleCount', 'borrowType']
+
+  // 根據借用類型添加相應的時間欄位
+  if (form.borrowType === '單次借用') {
+    stage1Fields.push('date', 'startTime', 'endTime')
+  } else if (form.borrowType === '多次借用') {
+    stage1Fields.push('multiStartDate', 'multiEndDate', 'repeatType', 'startTime', 'endTime')
+  }
+
   let isValid = true
-  Object.keys(form).forEach((field) => {
-    const fieldValid = validateField(field)
-    if (!fieldValid) {
+  stage1Fields.forEach((field) => {
+    if (!validateField(field)) {
       isValid = false
     }
   })
   return isValid
 }
 
+// 階段 2 的驗證函數
+const validateStage2 = () => {
+  const stage2Fields = ['eventName', 'description']
+  let isValid = true
+  stage2Fields.forEach((field) => {
+    if (!validateField(field)) {
+      isValid = false
+    }
+  })
+  return isValid
+}
+
+// 階段 3 的驗證函數
+const validateStage3 = () => {
+  const stage3Fields = [
+    'borrowerName',
+    'teacherName',
+    'borrowerDepartment',
+    'teacherDepartment',
+    'borrowerEmail',
+    'teacherEmail',
+    'borrowerPhone',
+    'teacherPhone',
+  ]
+  let isValid = true
+  stage3Fields.forEach((field) => {
+    if (!validateField(field)) {
+      isValid = false
+    }
+  })
+  return isValid
+}
+
+// 前往下一階段
+const nextStage = () => {
+  let canProceed = false
+
+  if (currentStage.value === 1) {
+    canProceed = validateStage1()
+    if (!canProceed) {
+      alert('請完成基本借用資訊！')
+      return
+    }
+  } else if (currentStage.value === 2) {
+    canProceed = validateStage2()
+    if (!canProceed) {
+      alert('請完成活動資訊！')
+      return
+    }
+  }
+
+  if (canProceed && currentStage.value < 3) {
+    currentStage.value++
+  }
+}
+
+// 回到上一階段
+const prevStage = () => {
+  if (currentStage.value > 1) {
+    currentStage.value--
+  }
+}
+
 const submitForm = () => {
-  if (!validateAllFields()) {
+  if (!validateStage3()) {
     alert('請修正表單中的錯誤！')
     return
   }
@@ -184,6 +260,58 @@ const submitForm = () => {
   Object.keys(errors).forEach((key) => {
     errors[key] = ''
   })
+  // 根據借用類型決定路由跳轉參數
+  if (result.borrowType === '多次借用') {
+    // 多次借用的路由跳轉
+    router.push({
+      path: '/record',
+      query: {
+        multiStartDate: result.multiStartDate,
+        multiEndDate: result.multiEndDate,
+        room: result.classroom,
+        startTime: result.startTime,
+        endTime: result.endTime,
+        eventName: result.eventName,
+        peopleCount: result.peopleCount,
+        borrowType: result.borrowType,
+        repeatType: result.repeatType,
+        description: result.description,
+        borrowerName: result.borrowerName,
+        teacherName: result.teacherName,
+        borrowerDepartment: result.borrowerDepartment,
+        teacherDepartment: result.teacherDepartment,
+        borrowerEmail: result.borrowerEmail,
+        teacherEmail: result.teacherEmail,
+        borrowerPhone: result.borrowerPhone,
+        teacherPhone: result.teacherPhone,
+      },
+    })
+  } else {
+    // 單次借用的路由跳轉
+    router.push({
+      path: '/record',
+      query: {
+        date: result.date,
+        room: result.classroom,
+        time: `${result.startTime.slice(0, 4)} - ${result.endTime.slice(5, 9)}`,
+        eventName: result.eventName,
+        peopleCount: result.peopleCount,
+        borrowType: result.borrowType,
+        description: result.description,
+        borrowerName: result.borrowerName,
+        teacherName: result.teacherName,
+        borrowerDepartment: result.borrowerDepartment,
+        teacherDepartment: result.teacherDepartment,
+        borrowerEmail: result.borrowerEmail,
+        teacherEmail: result.teacherEmail,
+        borrowerPhone: result.borrowerPhone,
+        teacherPhone: result.teacherPhone,
+      },
+    })
+  }
+
+  // 重置到第一階段
+  currentStage.value = 1
 }
 
 // 在組件掛載時設置教室名稱
@@ -197,39 +325,33 @@ onMounted(() => {
 
 <template>
   <div class="borrow-view">
-    <h1 style="padding: 0">借用申請</h1>
+    <h1 style="padding: 0px 0px 0px 10px">借用申請</h1>
     <hr />
-    <div class="form-container">
-      <h1>活動資訊</h1>
+
+    <!-- 階段指示器 -->
+    <div class="stage-indicator">
+      <div class="stage-item" :class="{ active: currentStage === 1, completed: currentStage > 1 }">
+        <div class="stage-number">1</div>
+        <div class="stage-title">基本借用資訊</div>
+      </div>
+      <div class="stage-divider"></div>
+      <div class="stage-item" :class="{ active: currentStage === 2, completed: currentStage > 2 }">
+        <div class="stage-number">2</div>
+        <div class="stage-title">活動資訊</div>
+      </div>
+      <div class="stage-divider"></div>
+      <div class="stage-item" :class="{ active: currentStage === 3 }">
+        <div class="stage-number">3</div>
+        <div class="stage-title">聯絡資訊</div>
+      </div>
+    </div>
+
+    <!-- 階段 1: 基本借用資訊 -->
+    <div v-if="currentStage === 1" class="form-container">
+      <h1>基本借用資訊</h1>
       <hr style="width: 96%; margin: 0 auto" />
 
-      <!-- 活動名稱 & 活動人數 -->
-      <div class="row">
-        <div class="field">
-          <label>活動名稱</label>
-          <!-- v-model的意思是雙向綁定，當輸入框的值改變時，form.eventName也會隨之改變 -->
-          <input
-            v-model="form.eventName"
-            @input="() => validateField('eventName')"
-            placeholder="請填寫活動名稱"
-          />
-          <span class="error" v-if="errors.eventName">{{ errors.eventName }}</span>
-        </div>
-
-        <div class="field">
-          <label>活動人數</label>
-          <!-- 輸入的只能是數字，或是旁邊箭頭只能是正整數加減，不能輸入中文 -->
-          <input
-            type="number"
-            v-model="form.peopleCount"
-            placeholder="請填寫活動人數"
-            @input="() => validateField('peopleCount')"
-          />
-          <span class="error" v-if="errors.peopleCount">{{ errors.peopleCount }}</span>
-        </div>
-      </div>
-
-      <!-- 選擇教室 & 借用類型 -->
+      <!-- 選擇教室 & 活動人數 -->
       <div class="row">
         <div class="field">
           <label>選擇教室</label>
@@ -251,9 +373,24 @@ onMounted(() => {
           </select>
           <span class="error" v-if="errors.classroom">{{ errors.classroom }}</span>
         </div>
+
+        <div class="field">
+          <label>活動人數</label>
+          <input
+            type="number"
+            v-model="form.peopleCount"
+            placeholder="請填寫活動人數"
+            @input="() => validateField('peopleCount')"
+          />
+          <span class="error" v-if="errors.peopleCount">{{ errors.peopleCount }}</span>
+        </div>
+      </div>
+
+      <!-- 借用類型 -->
+      <div class="row">
         <div class="field">
           <label>借用類型</label>
-          <div>
+          <div class="radio-group">
             <label>
               <input
                 type="radio"
@@ -382,6 +519,23 @@ onMounted(() => {
           <span class="error" v-if="errors.endTime">{{ errors.endTime }}</span>
         </div>
       </div>
+    </div>
+
+    <!-- 階段 2: 活動資訊 -->
+    <div v-if="currentStage === 2" class="form-container">
+      <h1>活動資訊</h1>
+      <hr style="width: 96%; margin: 0 auto" />
+
+      <!-- 活動名稱 -->
+      <div class="field">
+        <label>活動名稱</label>
+        <input
+          v-model="form.eventName"
+          @input="() => validateField('eventName')"
+          placeholder="請填寫活動名稱"
+        />
+        <span class="error" v-if="errors.eventName">{{ errors.eventName }}</span>
+      </div>
 
       <!-- 活動內容 -->
       <div class="field">
@@ -395,15 +549,15 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="form-container2">
-      <h1>基本資料</h1>
+    <!-- 階段 3: 聯絡資訊 -->
+    <div v-if="currentStage === 3" class="form-container">
+      <h1>聯絡資訊</h1>
       <hr style="width: 96%; margin: 0 auto" />
 
       <!-- 借用人姓名 & 指導老師姓名 -->
       <div class="row">
         <div class="field">
           <label>借用人姓名</label>
-          <!-- v-model的意思是雙向綁定，當輸入框的值改變時，form.eventName也會隨之改變 -->
           <input
             v-model="form.borrowerName"
             placeholder="請填寫借用人姓名"
@@ -491,8 +645,13 @@ onMounted(() => {
         </div>
       </div>
     </div>
-    <!-- 按鈕 -->
-    <button @click="submitForm">送出申請</button>
+
+    <!-- 導航按鈕 -->
+    <div class="navigation-buttons">
+      <button v-if="currentStage > 1" @click="prevStage" class="btn-prev">上一步</button>
+      <button v-if="currentStage < 3" @click="nextStage" class="btn-next">下一步</button>
+      <button v-if="currentStage === 3" @click="submitForm" class="btn-submit">送出申請</button>
+    </div>
   </div>
 </template>
 
@@ -512,6 +671,76 @@ onMounted(() => {
   font-size: 15px;
   margin-top: 5px;
 }
+
+/* 階段指示器樣式 */
+.stage-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 40px auto;
+  padding: 20px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.stage-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 0 0 auto;
+}
+
+.stage-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.stage-item.active .stage-number {
+  background-color: #c2ddff;
+  color: #333;
+}
+
+.stage-item.completed .stage-number {
+  background-color: #4caf50;
+  color: white;
+}
+
+.stage-title {
+  font-size: 14px;
+  color: #888;
+  font-weight: bold;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.stage-item.active .stage-title {
+  color: #333;
+}
+
+.stage-item.completed .stage-title {
+  color: #4caf50;
+}
+
+.stage-divider {
+  flex: 1;
+  height: 2px;
+  background-color: #e0e0e0;
+  margin: 0 15px;
+  margin-bottom: 25px;
+  max-width: 180px;
+  min-width: 30px;
+}
+
 .form-container {
   margin: auto;
   margin-top: 60px;
@@ -522,20 +751,10 @@ onMounted(() => {
   max-width: 1130px;
   font-family: Arial, sans-serif;
 }
-.form-container2 {
-  margin: auto;
-  margin-top: 80px;
-  background-color: #ffffff;
-  border: 1px solid #eee;
-  border-radius: 20px;
-  padding: 15px 15px 25px 15px;
-  max-width: 1130px;
-  font-family: Arial, sans-serif;
-}
 
 .row {
-  display: flex; /* 調整為flex布局 */
-  margin-bottom: 15px; /* 調整底部間距 */
+  display: flex;
+  margin-bottom: 15px;
 }
 
 .field {
@@ -546,10 +765,8 @@ onMounted(() => {
 }
 
 label {
-  /* 字大一點&顏色淺一點 */
   font-size: 25px;
   color: #777;
-  /* 字體加粗 */
   font-weight: bold;
   margin-bottom: 5px;
 }
@@ -557,13 +774,50 @@ label {
 input {
   height: 30px;
   background-color: #f0f0f0;
-  /* 字大一點 */
   padding: 10px;
   font-size: 21px;
-  /* 邊框圓一點 */
   border: 1px solid #aaaaaa;
   border-radius: 10px;
-  /* 框長一點 */
+}
+
+input[type='radio'] {
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  transform: scale(1.5);
+  cursor: pointer;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+}
+
+.field label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.field div {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.radio-group {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.field div label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+  margin-right: 0;
 }
 select {
   height: 50px;
@@ -586,26 +840,94 @@ textarea {
   border-radius: 10px;
 }
 
-button {
-  display: block; /* 讓按鈕成為區塊元素 */
-  width: 100%;
-  max-width: 1158px; /* 與 .form-container 和 .form-container2 的寬度一致 */
-  margin: 40px auto; /* 上下留空間，並讓按鈕水平置中 */
-  padding: 15px 0; /* 增加按鈕的高度 */
-  background-color: #c2ddff;
-  color: 555;
-  border: none;
-  border-radius: 10px; /* 圓角與容器一致 */
-  font-size: 25px; /* 調整字體大小 */
-  cursor: pointer;
+.navigation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 40px auto;
+  max-width: 1130px;
 }
 
-button:hover {
+.navigation-buttons button {
+  padding: 15px 30px;
+  font-size: 18px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  min-width: 120px;
+}
+
+.btn-prev {
+  background-color: #f0f0f0;
+  color: #666;
+}
+
+.btn-prev:hover {
+  background-color: #e0e0e0;
+}
+
+.btn-next {
+  background-color: #c2ddff;
+  color: #333;
+}
+
+.btn-next:hover {
   background-color: #a7c5eb;
+}
+
+.btn-submit {
+  background-color: #4caf50;
+  color: white;
+}
+
+.btn-submit:hover {
+  background-color: #45a049;
 }
 
 /* 手機板樣式 */
 @media (max-width: 768px) {
+  .borrow-view h1 {
+    margin: 20px 15px;
+    font-size: 24px;
+  }
+
+  .stage-indicator {
+    margin: 20px auto;
+    padding: 10px 5px;
+    max-width: 400px;
+  }
+
+  .stage-item {
+    flex: 0 0 auto;
+  }
+
+  .stage-number {
+    width: 35px;
+    height: 35px;
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+
+  .stage-title {
+    font-size: 12px;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .stage-divider {
+    margin: 0 8px;
+    margin-bottom: 18px;
+    max-width: 60px;
+    min-width: 25px;
+  }
+
+  .form-container {
+    margin-top: 20px;
+    padding: 10px;
+    max-width: 100%;
+  }
+
   .borrow-view {
     margin: 15px;
   }
@@ -617,7 +939,7 @@ button:hover {
   }
 
   .row {
-    flex-direction: column; /* 垂直排列 */
+    flex-direction: column;
     margin-bottom: 10px;
   }
 
@@ -629,6 +951,34 @@ button:hover {
     font-size: 18px;
   }
 
+  /* 手機版單選按鈕樣式 */
+  input[type='radio'] {
+    transform: scale(1.3);
+    margin-right: 6px;
+  }
+
+  .field label {
+    font-size: 18px;
+  }
+
+  /* 手機版單選按鈕容器 */
+  .field div {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* 借用類型單選按鈕保持橫向排列 */
+  .radio-group {
+    flex-direction: row !important;
+    gap: 15px !important;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .field div label {
+    font-size: 18px;
+  }
+
   input,
   select,
   textarea {
@@ -636,9 +986,80 @@ button:hover {
     padding: 8px;
   }
 
-  button {
-    font-size: 20px;
-    padding: 10px 0;
+  .navigation-buttons {
+    flex-direction: row;
+    gap: 15px;
+    padding: 0 20px;
+    justify-content: center;
+  }
+
+  .navigation-buttons button {
+    font-size: 16px;
+    padding: 12px 20px;
+    min-width: auto;
+    flex: 1;
+    max-width: 150px;
+  }
+}
+
+/* 平板樣式 */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .stage-indicator {
+    padding: 15px 10px;
+    max-width: 500px;
+  }
+
+  .stage-divider {
+    max-width: 120px;
+    min-width: 30px;
+    margin: 0 10px;
+    margin-bottom: 25px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stage-indicator {
+    margin: 15px auto;
+    padding: 8px 2px;
+    max-width: 300px;
+  }
+
+  .stage-number {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .stage-title {
+    font-size: 10px;
+    text-align: center;
+  }
+
+  .stage-divider {
+    margin: 0 5px;
+    margin-bottom: 15px;
+    max-width: 40px;
+    min-width: 15px;
+  }
+
+  .radio-group {
+    gap: 12px !important;
+  }
+
+  .radio-group label {
+    font-size: 16px !important;
+  }
+
+  .navigation-buttons {
+    gap: 10px;
+    padding: 0 15px;
+  }
+
+  .navigation-buttons button {
+    font-size: 14px;
+    padding: 10px 15px;
+    max-width: 120px;
   }
 }
 </style>
