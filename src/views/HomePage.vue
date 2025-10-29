@@ -85,6 +85,7 @@ const router = useRouter()
     <div class="header">
       <div class="header1">臺北市立大學 資訊科學系</div>
       <div class="header2">教室借用系統</div>
+      <div class="header2">UTaipei CS Classroom Borrow System</div>
     </div>
     <br />
 
