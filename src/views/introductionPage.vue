@@ -273,13 +273,22 @@ button:hover {
 }
 
 @media (max-width: 767px) {
-  .buttonGrid {
-    grid-template-columns: repeat(2, 1fr);
+  /* 調整整個 section 的 margin */
+  .introduction {
+    margin: 20px 15px;
   }
 
+  /* 按鈕網格改成 2 列*/
+  .buttonGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  /* 各教室區塊改成直式排列，間距縮小 */
   .classroomIntro {
     flex-direction: column;
     align-items: flex-start;
+    gap: 20px;
   }
 
   .classroomImage,
@@ -289,6 +298,23 @@ button:hover {
 
   .classroomImage img {
     width: 100%;
+    max-height: 300px;
+    object-fit: cover; /* 保持圖片比例 */
+  }
+
+  .classroomInfo h3 {
+    font-size: 24px;
+  }
+
+  .classroomInfo p,
+  .classroomInfo a,
+  .borrowBtn {
+    font-size: 14px;
+  }
+
+  /* 樓層平面圖區塊文字調整 */
+  .floorPlans h3 {
+    margin-bottom: 15px;
   }
 }
 </style>
