@@ -928,6 +928,16 @@ textarea {
     max-width: 100%;
   }
 
+  .borrow-view {
+    margin: 15px;
+  }
+  .form-container,
+  .form-container2 {
+    margin-top: 20px;
+    padding: 10px;
+    max-width: 100%; /* 滿版寬度 */
+  }
+
   .row {
     flex-direction: column;
     margin-bottom: 10px;
