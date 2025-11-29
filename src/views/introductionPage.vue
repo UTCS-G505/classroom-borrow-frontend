@@ -9,7 +9,7 @@ const classrooms = ref([
     name: 'G312 會議室',
     location: '公誠樓 3 樓',
     equipment: '白板、投影幕、桌椅',
-    img: ['/picture/G312.jpg'],
+    img: ['/picture/G312-1.jpg','/picture/G312-2.jpg'],
     seatMap: '/downloads/G312-seatmap.pdf',
   },
   {
@@ -42,7 +42,7 @@ const classrooms = ref([
     name: 'G316 電腦教室',
     location: '公誠樓 3 樓',
     equipment: '電腦、白板、黑板、投影幕',
-    img: ['/picture/G316.jpg'],
+    img: ['/picture/G316-1.jpg','/picture/G316-2.jpg'],
     seatMap: '/downloads/G316-seatmap.pdf',
   },
   {
@@ -50,7 +50,7 @@ const classrooms = ref([
     name: 'G501 會議室',
     location: '公誠樓 5 樓',
     equipment: '白板、投影幕、桌椅',
-    img: ['/picture/G501.jpg'],
+    img: ['/picture/G501-1.jpg','/picture/G501-2.jpg'],
     seatMap: '/downloads/G501-seatmap.pdf',
   },
   {
@@ -58,7 +58,7 @@ const classrooms = ref([
     name: 'G508 系圖書室',
     location: '公誠樓 5 樓',
     equipment: '書、桌椅、白板、投影幕',
-    img: ['/picture/G508.jpg'],
+    img: ['/picture/G508-1.jpg','/picture/G508-2.jpg'],
     seatMap: '/downloads/G508-seatmap.pdf',
   },
   {
@@ -66,7 +66,7 @@ const classrooms = ref([
     name: 'G509 IOS教室',
     location: '公誠樓 5 樓',
     equipment: 'Mac 電腦、白板、投影幕',
-    img: ['/picture/G509.jpg'],
+    img: ['/picture/G509-1.jpg','/picture/G509-2.jpg'],
     seatMap: '/downloads/G509-seatmap.pdf',
   },
   {
@@ -74,7 +74,7 @@ const classrooms = ref([
     name: 'G516 電腦教室',
     location: '公誠樓 5 樓',
     equipment: '電腦、白板、投影幕',
-    img: ['/picture/G516.jpg'],
+    img: ['/picture/G516-1.jpg','/picture/G516-2.jpg'],
     seatMap: '/downloads/G516-seatmap.pdf',
   },
 ])
