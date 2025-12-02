@@ -283,6 +283,7 @@ function gotoIntroductionPage() {
 .content {
   flex: 1;
   padding: 20px;
+  overflow: hidden; /* 防止內容過寬撐開整個頁面 */
 }
 
 .timetable {
@@ -330,12 +331,14 @@ function gotoIntroductionPage() {
 }
 
 .tableWrapper {
-  overflow-x: auto;
+  overflow-x: auto; /* 允許橫向捲動 */
+  /* 移除原本的 margin/padding hack，這是導致露餡的主因 */
 }
 
 table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   min-width: 800px;
 }
 
@@ -344,6 +347,32 @@ td {
   padding: 10px;
   text-align: center;
   border-bottom: 1px solid #e5e5e5;
+  background-color: #fff; /* 確保有背景色，避免 sticky 時文字透視 */
+}
+
+/* --- 關鍵修改：固定左上角箭頭 --- */
+th.arrowCell:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 30; /* 層級最高 */
+  background-color: #fff;
+  border-right: 1px solid #ddd; /* 增加右側分隔線 */
+  /* 新增：加上陰影，遮擋更嚴密，並與下方時間欄一致 */
+  box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.15);
+}
+
+/* --- 關鍵修改：固定左側時間欄 --- */
+.timeCell {
+  position: sticky;
+  left: 0;
+  z-index: 20; /* 層級高於普通格子 */
+  background-color: #fafafa; /* 使用不透明背景，防止文字重疊 */
+  font-size: 16px;
+  color: #666;
+  white-space: nowrap;
+
+  border-right: 1px solid #ddd;
+  box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.15);
 }
 
 .dateText {
@@ -366,12 +395,7 @@ th.todayColumn::after {
   color: #2a5b9e;
 }
 
-.timeCell {
-  background-color: #fafafa;
-  font-size: 16px;
-  color: #666;
-  white-space: nowrap;
-}
+/* .timeCell 基本樣式已移至上方 sticky 區塊統一設定 */
 
 .slotCell {
   min-height: 50px;
@@ -452,20 +476,30 @@ th.todayColumn::after {
     overflow-x: auto;
     white-space: nowrap;
   }
-}
-</style>
 
-<style>
-* {
-  margin: 0;
-  padding: 0;
-}
+  .content {
+    padding: 10px;
+  }
 
-html,
-body {
-  width: 100%;
-  height: 100%;
-  overflow-x: hidden;
-  background-color: #f6f6f5;
+  .timetable {
+    padding: 10px;
+  }
+
+  /* --- 手機版時間欄位優化 --- */
+  .timeCell {
+    font-size: 12px; /* 縮小字體 */
+    padding: 10px 2px; /* 減少內距 */
+    width: 60px; /* 固定較窄的寬度 */
+    max-width: 60px;
+    white-space: normal; /* 允許換行 (例如 08:00 換行 -09:00) */
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  /* 左上角箭頭也縮小一點 */
+  .arrowCell:first-child {
+    min-width: 40px;
+    padding: 0;
+  }
 }
 </style>
