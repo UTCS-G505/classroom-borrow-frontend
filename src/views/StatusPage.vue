@@ -21,7 +21,7 @@ const timeSlots = [
   '09:10-10:00',
   '10:10-11:00',
   '11:10-12:00',
-  '12:00-13:00',
+  '12:10-13:00',
   '13:10-14:00',
   '14:10-15:00',
   '15:10-16:00',
@@ -35,9 +35,14 @@ const timeSlots = [
 
 const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
 
-// 今天日期 key
 const today = new Date()
 const todayKey = getDateKey(today)
+
+// --- 选取状态 ---
+const selectionState = ref({
+  dateKey: null,
+  indices: [],
+})
 
 function getWeekDates(weekOffset = 0) {
   const today = new Date()
@@ -74,6 +79,37 @@ const error = ref('')
 const weekDates = computed(() => getWeekDates(weekOffset.value))
 const schedule = computed(() => scheduleData.value[selectedRoom.value] || {})
 
+function isSelected(dateKey, tIdx) {
+  return selectionState.value.dateKey === dateKey && selectionState.value.indices.includes(tIdx)
+}
+
+const sortedIndices = computed(() => {
+  return [...selectionState.value.indices].sort((a, b) => a - b)
+})
+
+const isContinuous = computed(() => {
+  const arr = sortedIndices.value
+  if (arr.length === 0) return false
+  if (arr.length === 1) return true
+
+  const min = arr[0]
+  const max = arr[arr.length - 1]
+  return max - min + 1 === arr.length
+})
+
+const selectedTimeRangeDisplay = computed(() => {
+  const arr = sortedIndices.value
+  if (arr.length === 0) return ''
+
+  const firstSlot = timeSlots[arr[0]]
+  const lastSlot = timeSlots[arr[arr.length - 1]]
+
+  const start = firstSlot.split('-')[0]
+  const end = lastSlot.split('-')[1]
+
+  return `${start} - ${end} (${arr.length} 節)`
+})
+
 onMounted(async () => {
   try {
     const res = await fetch('/schedule.json')
@@ -85,35 +121,71 @@ onMounted(async () => {
   }
 })
 
-//連接至申請借用頁
-function handleSlotClick(date, timeSlot) {
+// --- 點擊格子 (已加入過去日期禁止條件) ---
+function toggleSlot(date, tIdx) {
   const dateKey = getDateKey(date)
+
+  if (new Date(dateKey) < new Date(todayKey)) return // ← 不允許過去日期
+
+  const currentKey = selectionState.value.dateKey
+
+  if (currentKey !== dateKey) {
+    selectionState.value.dateKey = dateKey
+    selectionState.value.indices = [tIdx]
+    return
+  }
+
+  const idxPosition = selectionState.value.indices.indexOf(tIdx)
+  if (idxPosition > -1) {
+    selectionState.value.indices.splice(idxPosition, 1)
+    if (selectionState.value.indices.length === 0) {
+      selectionState.value.dateKey = null
+    }
+  } else {
+    selectionState.value.indices.push(tIdx)
+  }
+}
+
+// StatusPage.vue
+
+function handleConfirm() {
+  if (!isContinuous.value || selectionState.value.indices.length === 0) return
+
+  const arr = sortedIndices.value
+  const firstSlot = timeSlots[arr[0]] // 例如 "08:10-09:00"
+  const lastSlot = timeSlots[arr[arr.length - 1]] // 例如 "09:10-10:00"
+
+  // 修改重點：移除冒號 (:) 以符合 BorrowRequestView 的 option value (例如 "0810-0900")
+  const fmtStart = firstSlot.replace(/:/g, '')
+  const fmtEnd = lastSlot.replace(/:/g, '')
+
   router.push({
     path: '/borrow',
     query: {
-      roomId: selectedRoom.value, // 教室
-      date: dateKey, // 單次借用日期
-      startTime: timeSlot.split('-')[0], // 起始時間
-      endTime: timeSlot.split('-')[1], // 結束時間
-      borrowType: '單次借用', // 自動選擇單次借用
+      roomId: selectedRoom.value,
+      date: selectionState.value.dateKey,
+      startTime: fmtStart, // 傳送格式化後的完整時段字串
+      endTime: fmtEnd, // 傳送格式化後的完整時段字串
+      borrowType: '單次借用',
     },
   })
 }
 
-//連接至教室介紹頁
+function clearSelection() {
+  selectionState.value.dateKey = null
+  selectionState.value.indices = []
+}
+
 function gotoIntroductionPage() {
   router.push({
     name: 'introductionPage',
-    query: {
-      roomId: selectedRoom.value,
-    },
+    query: { roomId: selectedRoom.value },
   })
 }
 </script>
 
 <template>
   <div class="container">
-    <!-- 側邊導覽列 -->
     <aside class="sidebar">
       <h2 class="sidebarTitle">可借用教室</h2>
       <ul>
@@ -121,7 +193,10 @@ function gotoIntroductionPage() {
           <span
             class="navLink"
             :class="{ active: selectedRoom === room.id }"
-            @click="selectedRoom = room.id"
+            @click="
+              selectedRoom = room.id
+              clearSelection()
+            "
           >
             {{ room.title }}
           </span>
@@ -129,14 +204,16 @@ function gotoIntroductionPage() {
       </ul>
     </aside>
 
-    <!-- 手機版頂部導覽列 -->
     <nav class="mobile-nav">
       <ul>
         <li v-for="room in classrooms" :key="room.id">
           <button
             class="navBtn"
             :class="{ active: selectedRoom === room.id }"
-            @click="selectedRoom = room.id"
+            @click="
+              selectedRoom = room.id
+              clearSelection()
+            "
           >
             {{ room.id }}
           </button>
@@ -144,7 +221,6 @@ function gotoIntroductionPage() {
       </ul>
     </nav>
 
-    <!-- 主內容區 -->
     <section class="content">
       <div class="timetable">
         <div class="header">
@@ -183,15 +259,33 @@ function gotoIntroductionPage() {
                   :key="dIdx"
                   :class="[
                     'slotCell',
-                    { clickable: !schedule[getDateKey(date)]?.[time] },
+
+                    /* 過去日期 */
+                    { pastDay: new Date(getDateKey(date)) < new Date(todayKey) },
+
+                    /* 只有未來日期 + 無排程才能點 */
+                    {
+                      clickable:
+                        !schedule[getDateKey(date)]?.[time] &&
+                        new Date(getDateKey(date)) >= new Date(todayKey),
+                    },
+
                     { todayColumn: getDateKey(date) === todayKey },
+                    { selectedSlot: isSelected(getDateKey(date), tIdx) },
                   ]"
-                  @click="!schedule[getDateKey(date)]?.[time] && handleSlotClick(date, time)"
+                  @click="
+                    !schedule[getDateKey(date)]?.[time] &&
+                    new Date(getDateKey(date)) >= new Date(todayKey) &&
+                    toggleSlot(date, tIdx)
+                  "
                 >
                   <div v-if="schedule[getDateKey(date)]?.[time]" class="event">
                     {{ schedule[getDateKey(date)][time] }}
                   </div>
-                  <div v-else class="emptySlot">+</div>
+
+                  <div v-else-if="!isSelected(getDateKey(date), tIdx)" class="emptySlot">+</div>
+
+                  <div v-else class="checkMark">✔</div>
                 </td>
               </tr>
             </tbody>
@@ -199,6 +293,22 @@ function gotoIntroductionPage() {
         </div>
       </div>
     </section>
+
+    <transition name="slide-up">
+      <div v-if="selectionState.indices.length > 0" class="selectionBar">
+        <div class="selectionInfo">
+          <span class="selectionDate">日期: {{ selectionState.dateKey }}</span>
+          <span class="selectionTime">時間: {{ selectedTimeRangeDisplay }}</span>
+          <span v-if="!isContinuous" class="selectionError">請選擇連續的時段!!!</span>
+        </div>
+        <div class="actionButtons">
+          <button class="cancelBtn" @click="clearSelection">取消</button>
+          <button class="confirmBtn" :disabled="!isContinuous" @click="handleConfirm">
+            確認借用
+          </button>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -461,6 +571,166 @@ th.todayColumn::after {
   transform: scale(1.1);
 }
 
+/* --- 新增樣式：選取狀態 (去藍色版) --- */
+
+/* 被選取的格子樣式：改為中性灰 */
+.selectedSlot {
+  background-color: #dbeafe !important; /* Blue 100 */
+  box-shadow: inset 0 0 0 1px #60a5fa; /* Blue 400 Border */
+}
+
+.checkMark {
+  color: #2563eb; /* 深灰色打勾 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+}
+
+/* --- 底部 Action Bar (淺色懸浮風格) --- */
+.selectionBar {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: auto;
+  min-width: 340px;
+  max-width: 90%;
+
+  /* 背景：與側邊欄一致的淺灰 (#eae8e6) */
+  background: rgba(234, 232, 230, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  color: #333;
+  padding: 14px 24px;
+  border-radius: 100px;
+
+  /* 陰影 */
+  box-shadow:
+    0 10px 30px -5px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+  gap: 24px;
+}
+
+.selectionInfo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.2;
+}
+
+.selectionDate {
+  font-weight: 700;
+  color: #78716c; /* 暖灰色 */
+  font-size: 10px;
+
+  letter-spacing: 0.5px;
+  margin-bottom: 5px;
+}
+
+.selectionTime {
+  font-weight: 700;
+  font-size: 15px;
+  color: #333; /* 改為近黑色，強調對比 */
+  font-family: monospace;
+}
+
+.selectionError {
+  position: static;
+  margin-top: 4px; /* 與上方時間的距離 */
+
+  color: #ef4444; /* 紅色警示 (在灰色系中保留紅色比較清楚) */
+  font-size: 12px;
+  font-weight: 700;
+
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 10px;
+}
+
+/* 取消按鈕 */
+.cancelBtn {
+  background: transparent;
+  border: 1px solid #a8a29e;
+  color: #57534e;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelBtn:hover {
+  background: #d6d3d1;
+  color: #1c1917;
+  border-color: #78716c;
+}
+
+/* 確認按鈕 - 改為深灰色實心 */
+.confirmBtn {
+  background: #44403c; /* 深暖灰/黑 */
+  color: #fff;
+  border: none;
+  padding: 8px 22px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.confirmBtn:disabled {
+  background: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.confirmBtn:not(:disabled):hover {
+  background: #1c1917; /* Hover 變全黑 */
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+}
+
+/* 動畫效果 */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translate(-50%, 120%);
+  opacity: 0;
+}
+
+/* 過去日期（不可選） */
+.pastDay {
+  position: relative;
+  opacity: 0.35;
+  cursor: not-allowed !important;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.03) 0,
+    rgba(0, 0, 0, 0.03) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
 /* 手機版 RWD */
 @media (max-width: 768px) {
   .container {
@@ -500,6 +770,27 @@ th.todayColumn::after {
   .arrowCell:first-child {
     min-width: 40px;
     padding: 0;
+  }
+
+  .selectionBar {
+    width: 95%;
+    bottom: 10px;
+    padding: 12px 20px;
+    border-radius: 12px;
+  }
+
+  .actionButtons {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* 取消按鈕 */
+  .cancelBtn {
+    padding: 5px 15px;
+  }
+
+  .confirmBtn {
+    padding: 5px 15px;
   }
 }
 </style>
