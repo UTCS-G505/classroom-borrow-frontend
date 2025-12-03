@@ -5,51 +5,47 @@ import { useRoute, useRouter } from 'vue-router'
 const route = useRoute()
 const router = useRouter()
 
-// 可借用教室資料
+// 教室資料
 const classrooms = ref([
   {
     id: 'G312',
     name: 'G312 會議室',
     location: '公誠樓 3 樓',
     equipment: '白板、投影幕、桌椅',
-    description: '開會...',
-    img: '/picture/G312.png',
+    img: ['/picture/G312-1.jpg', '/picture/G312-2.jpg'],
     seatMap: '/downloads/G312-seatmap.pdf',
   },
   {
     id: 'G313',
     name: 'G313 普通教室',
     location: '公誠樓 3 樓',
-    equipment: '白板、投影幕、桌椅',
-    description: '可容納 60 人....。',
-    img: '/picture/G313.png',
+    equipment: '黑板、投影幕、桌椅',
+    img: ['/picture/G313-1.jpg', '/picture/G313-2.jpg', '/picture/G313-3.jpg'],
     seatMap: '/downloads/G313-seatmap.pdf',
   },
   {
     id: 'G314',
     name: 'G314 普通教室',
     location: '公誠樓 3 樓',
-    equipment: '白板、投影幕、桌椅',
-    description: '可容納 60 人....',
-    img: '/picture/G314.png',
+    equipment: '黑板、投影幕、桌椅',
+    img: ['/picture/G314-1.jpg', '/picture/G314-2.jpg', '/picture/G314-3.jpg'],
     seatMap: '/downloads/G314-seatmap.pdf',
   },
   {
     id: 'G315',
     name: 'G315 電腦教室',
     location: '公誠樓 3 樓',
-    equipment: '50 台電腦、白板、投影幕',
+    equipment: '電腦、白板、黑板、投影幕',
     description: '可容納 50 人....',
-    img: '/picture/G315.png',
+    img: ['/picture/G315-1.jpg', '/picture/G315-2.jpg', '/picture/G315-3.jpg'],
     seatMap: '/downloads/G315-seatmap.pdf',
   },
   {
     id: 'G316',
     name: 'G316 電腦教室',
     location: '公誠樓 3 樓',
-    equipment: '50 台電腦、白板、投影幕',
-    description: '可容納 50 人....',
-    img: '/picture/G316.png',
+    equipment: '電腦、白板、黑板、投影幕',
+    img: ['/picture/G316-1.jpg', '/picture/G316-2.jpg'],
     seatMap: '/downloads/G316-seatmap.pdf',
   },
   {
@@ -57,17 +53,15 @@ const classrooms = ref([
     name: 'G501 會議室',
     location: '公誠樓 5 樓',
     equipment: '白板、投影幕、桌椅',
-    description: '開會...',
-    img: '/picture/G501.png',
+    img: ['/picture/G501-1.jpg', '/picture/G501-2.jpg'],
     seatMap: '/downloads/G501-seatmap.pdf',
   },
   {
     id: 'G508',
     name: 'G508 系圖書室',
     location: '公誠樓 5 樓',
-    equipment: '書架、閱覽桌椅',
-    description: '讀書、討論...',
-    img: '/picture/G508.png',
+    equipment: '書、桌椅、白板、投影幕',
+    img: ['/picture/G508-1.jpg', '/picture/G508-2.jpg'],
     seatMap: '/downloads/G508-seatmap.pdf',
   },
   {
@@ -75,28 +69,45 @@ const classrooms = ref([
     name: 'G509 IOS教室',
     location: '公誠樓 5 樓',
     equipment: 'Mac 電腦、白板、投影幕',
-    description: '可容納40人...',
-    img: '/picture/G509.png',
+    img: ['/picture/G509-1.jpg', '/picture/G509-2.jpg'],
     seatMap: '/downloads/G509-seatmap.pdf',
   },
   {
     id: 'G516',
     name: 'G516 電腦教室',
     location: '公誠樓 5 樓',
-    equipment: '50 台電腦、白板、投影幕',
-    description: '可容納 50 人....',
-    img: '/picture/G516.png',
+    equipment: '電腦、白板、投影幕',
+    img: ['/picture/G516-1.jpg', '/picture/G516-2.jpg'],
     seatMap: '/downloads/G516-seatmap.pdf',
   },
 ])
 
-//樓層平面圖資料
+// 儲存每個教室目前圖片索引
+const currentImageIndex = ref({}) // { 'G312': 0, 'G313': 0, ... }
+
+// 下一張圖片
+function nextImage(roomId, imgLength) {
+  if (!(roomId in currentImageIndex.value)) {
+    currentImageIndex.value[roomId] = 0
+  }
+  currentImageIndex.value[roomId] = (currentImageIndex.value[roomId] + 1) % imgLength
+}
+
+// 上一張圖片
+function prevImage(roomId, imgLength) {
+  if (!(roomId in currentImageIndex.value)) {
+    currentImageIndex.value[roomId] = 0
+  }
+  currentImageIndex.value[roomId] = (currentImageIndex.value[roomId] - 1 + imgLength) % imgLength
+}
+
+// 樓層平面圖資料
 const floorPlans = ref([
   { title: '三樓平面圖', img: '/picture/floor3.png' },
   { title: '五樓平面圖', img: '/picture/floor5.png' },
 ])
 
-//點選按鈕，滑動到對應的教室介紹
+// 點選按鈕，滑動到對應的教室介紹
 function scrollToRoom(id) {
   const target = document.getElementById(id)
   if (target) {
@@ -104,15 +115,7 @@ function scrollToRoom(id) {
   }
 }
 
-// 根據教室情況頁的 roomId，自動滾動到對應區塊
-onMounted(() => {
-  const roomId = route.query.roomId
-  if (roomId) {
-    setTimeout(() => {
-      scrollToRoom(roomId)
-    }, 100)
-  }
-})
+const router = useRouter()
 
 function goToBorrowPage(roomId) {
   router.push({
@@ -145,15 +148,61 @@ function goToBorrowPage(roomId) {
 
     <!--各教室介紹區塊-->
     <div class="classroomIntro" v-for="room in classrooms" :key="room.id" :id="room.id">
+      <!-- 圖片輪播區 -->
       <div class="classroomImage">
-        <img :src="room.img" :alt="room.name" />
+        <div class="carousel-container">
+          <!-- 圖片列 (橫向排列) -->
+          <div
+            class="carousel-track"
+            :style="{
+              transform: `translateX(-${(currentImageIndex[room.id] || 0) * 100}%)`,
+            }"
+          >
+            <div v-for="(imgSrc, index) in room.img" :key="imgSrc" class="carousel-slide">
+              <img :src="imgSrc" :alt="`${room.name} 圖片 ${index + 1}`" />
+            </div>
+          </div>
+
+          <!-- 左右切換按鈕 -->
+          <button
+            v-if="room.img.length > 1"
+            class="carousel-btn prev"
+            @click="prevImage(room.id, room.img.length)"
+          >
+            ‹
+          </button>
+          <button
+            v-if="room.img.length > 1"
+            class="carousel-btn next"
+            @click="nextImage(room.id, room.img.length)"
+          >
+            ›
+          </button>
+
+          <!-- 圖片下方的圓點指示器 -->
+          <div v-if="room.img.length > 1" class="carousel-dots">
+            <span
+              v-for="(img, dotIndex) in room.img"
+              :key="dotIndex"
+              class="dot"
+              :class="{ active: (currentImageIndex[room.id] || 0) === dotIndex }"
+              @click="currentImageIndex[room.id] = dotIndex"
+            ></span>
+          </div>
+        </div>
       </div>
 
+      <!-- 教室資訊區 -->
       <div class="classroomInfo">
         <h3>{{ room.name }}</h3>
         <p><strong>位置：</strong>{{ room.location }}</p>
         <p><strong>設備：</strong>{{ room.equipment }}</p>
-        <a :href="room.seatMap" download>下載教室座位表.pdf ⬇</a>
+        <a
+          v-if="!['G508 系圖書室', 'G312 會議室', 'G501 會議室'].includes(room.name)"
+          :href="room.seatMap"
+          download
+          >下載教室座位表.pdf ⬇</a
+        >
         <button class="borrowBtn" @click="goToBorrowPage(room.id)">我要借用</button>
       </div>
     </div>
@@ -177,6 +226,7 @@ function goToBorrowPage(roomId) {
   margin-bottom: 25px;
 }
 
+/* 教室按鈕區 */
 .buttonGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -198,6 +248,7 @@ button:hover {
   background-color: #a7c5eb;
 }
 
+/* 樓層平面圖 */
 .floorPlans {
   display: flex;
   flex-wrap: wrap;
@@ -218,6 +269,7 @@ button:hover {
   width: 100%;
 }
 
+/* 教室介紹  */
 .classroomIntro {
   display: flex;
   align-items: center;
@@ -228,16 +280,103 @@ button:hover {
   background-color: #eae8e6;
 }
 
+/* 教室圖片*/
 .classroomImage {
   flex: 2;
+  position: relative;
 }
 
 .classroomImage img {
-  width: 100%;
-  height: auto;
-  max-height: 450px;
+  width: 600px;
+  height: 400px;
+  object-fit: cover;
+  display: block;
 }
 
+/* ======== 照片輪播 ======== */
+.carousel-container {
+  position: relative;
+  width: 600px;
+  height: 400px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.8s ease-in-out;
+  width: 100%;
+  height: 100%;
+}
+
+.carousel-slide {
+  min-width: 100%;
+  height: 100%;
+}
+
+.carousel-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ======== 左右按鈕 ======== */
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.5);
+  color: #555;
+  border: none;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background-color 0.3s,
+    transform 0.2s;
+}
+
+.carousel-btn:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+.carousel-btn.prev {
+  left: 10px;
+}
+
+.carousel-btn.next {
+  right: 20px;
+}
+
+/* 圖片下方圓點指示器 */
+.carousel-dots {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.dot.active {
+  background-color: #ffffff;
+}
+
+/* 教室資訊 */
 .classroomInfo {
   flex: 1;
   display: flex;
@@ -269,6 +408,7 @@ button:hover {
   text-decoration: underline;
 }
 
+/* 借用按鈕 */
 .borrowBtn {
   margin-top: 30px;
   background-color: #d9d9d9;
@@ -308,19 +448,26 @@ button:hover {
   }
 
   .classroomImage img {
+    width: 100%; /* 佔滿容器寬度 */
+    height: auto; /* 保持比例 */
+    max-height: 300px; /* 可以調整手機最大高度 */
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .carousel-container {
     width: 100%;
-    max-height: 300px;
-    object-fit: cover; /* 保持圖片比例 */
+    height: auto;
   }
 
-  .classroomInfo h3 {
-    font-size: 24px;
+  .carousel-slide img {
+    height: auto;
   }
 
-  .classroomInfo p,
-  .classroomInfo a,
-  .borrowBtn {
-    font-size: 14px;
+  .carousel-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
   }
 
   /* 樓層平面圖區塊文字調整 */
