@@ -107,7 +107,7 @@ const selectedTimeRangeDisplay = computed(() => {
   const start = firstSlot.split('-')[0]
   const end = lastSlot.split('-')[1]
 
-  return `${start} - ${end} (${arr.length} 節)`
+  return `${start}-${end}(${arr.length}節)`
 })
 
 onMounted(async () => {
@@ -125,7 +125,7 @@ onMounted(async () => {
 function toggleSlot(date, tIdx) {
   const dateKey = getDateKey(date)
 
-  if (new Date(dateKey) < new Date(todayKey)) return // ← 不允許過去日期
+  if (new Date(dateKey) <= new Date(todayKey)) return // ← 不允許過去日期
 
   const currentKey = selectionState.value.dateKey
 
@@ -260,7 +260,7 @@ function selectRoom(id) {
                     'slotCell',
 
                     /* 過去日期 */
-                    { pastDay: new Date(getDateKey(date)) < new Date(todayKey) },
+                    { pastDay: new Date(getDateKey(date)) <= new Date(todayKey) },
 
                     /* 只有未來日期 + 無排程才能點 */
                     {
@@ -269,7 +269,6 @@ function selectRoom(id) {
                         new Date(getDateKey(date)) >= new Date(todayKey),
                     },
 
-                    { todayColumn: getDateKey(date) === todayKey },
                     { selectedSlot: isSelected(getDateKey(date), tIdx) },
                   ]"
                   @click="
@@ -284,7 +283,7 @@ function selectRoom(id) {
 
                   <div v-else-if="!isSelected(getDateKey(date), tIdx)" class="emptySlot">+</div>
 
-                  <div v-else class="checkMark">✔</div>
+                  <div v-else class="checkMark">&check;</div>
                 </td>
               </tr>
             </tbody>
@@ -302,9 +301,7 @@ function selectRoom(id) {
         </div>
         <div class="actionButtons">
           <button class="cancelBtn" @click="clearSelection">取消</button>
-          <button class="confirmBtn" :disabled="!isContinuous" @click="handleConfirm">
-            確認借用
-          </button>
+          <button class="confirmBtn" :disabled="!isContinuous" @click="handleConfirm">確認</button>
         </div>
       </div>
     </transition>
@@ -489,19 +486,21 @@ th.arrowCell:first-child {
   color: #999;
 }
 
-/* 🔹 整欄標記「今天」 */
+/* 標記「今天」 */
 .todayColumn {
   background-color: #fafafa !important;
   position: relative;
 }
 
-/* 在表頭顯示「今天」文字提示 */
 th.todayColumn::after {
+  content: '';
   position: absolute;
-  top: 4px;
-  right: 6px;
-  font-size: 10px;
-  color: #2a5b9e;
+  left: 8px;
+  right: 8px;
+  bottom: 6px;
+  height: 4px;
+  background: #d6d3d1;
+  border-radius: 4px;
 }
 
 /* .timeCell 基本樣式已移至上方 sticky 區塊統一設定 */
@@ -579,7 +578,7 @@ th.todayColumn::after {
 }
 
 .checkMark {
-  color: #2563eb; /* 深灰色打勾 */
+  color: #2a5b9e;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -790,6 +789,14 @@ th.todayColumn::after {
 
   .confirmBtn {
     padding: 5px 15px;
+  }
+
+  .checkMark {
+    font-size: 14px;
+  }
+
+  .selectionTime {
+    font-size: 14px;
   }
 }
 </style>
