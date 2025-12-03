@@ -1,9 +1,6 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-
-const route = useRoute()
-const router = useRouter()
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 // 教室資料
 const classrooms = ref([
@@ -111,10 +108,11 @@ const floorPlans = ref([
 function scrollToRoom(id) {
   const target = document.getElementById(id)
   if (target) {
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    target.scrollIntoView({ behavior: 'smooth' })
   }
 }
 
+//導向借用頁面
 const router = useRouter()
 
 function goToBorrowPage(roomId) {
