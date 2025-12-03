@@ -488,7 +488,7 @@ th.arrowCell:first-child {
 
 /* 標記「今天」 */
 .todayColumn {
-  background-color: #fafafa !important;
+  background-color: #f2f2f2 !important;
   position: relative;
 }
 
