@@ -182,6 +182,11 @@ function gotoIntroductionPage() {
     query: { roomId: selectedRoom.value },
   })
 }
+
+function selectRoom(id) {
+  selectedRoom.value = id
+  clearSelection()
+}
 </script>
 
 <template>
@@ -193,10 +198,7 @@ function gotoIntroductionPage() {
           <span
             class="navLink"
             :class="{ active: selectedRoom === room.id }"
-            @click="
-              selectedRoom = room.id
-              clearSelection()
-            "
+            @click="selectRoom(room.id)"
           >
             {{ room.title }}
           </span>
@@ -210,10 +212,7 @@ function gotoIntroductionPage() {
           <button
             class="navBtn"
             :class="{ active: selectedRoom === room.id }"
-            @click="
-              selectedRoom = room.id
-              clearSelection()
-            "
+            @click="selectRoom(room.id)"
           >
             {{ room.id }}
           </button>
