@@ -1,42 +1,42 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
-const route = useRoute();
-const bookingId = route.query.id; // 從網址取得 id
-const requestData = ref(null);
-const isLoading = ref(true);
-const comment = ref(''); // 老師的意見
+const route = useRoute()
+const bookingId = route.query.id // 從網址取得 id
+const requestData = ref(null)
+const isLoading = ref(true)
+const comment = ref('') // 老師的意見
 
 // 1. 畫面載入時，跟後端要資料
 onMounted(async () => {
   if (!bookingId) {
-    alert('無效的連結 (缺少 ID)');
-    isLoading.value = false;
-    return;
+    alert('無效的連結 (缺少 ID)')
+    isLoading.value = false
+    return
   }
   try {
     // 呼叫我們剛寫好的後端 API
-    const res = await fetch(`/api/borrow/${bookingId}`);
-    const json = await res.json();
+    const res = await fetch(`/api/borrow/${bookingId}`)
+    const json = await res.json()
 
     if (json.success) {
-      requestData.value = json.data;
+      requestData.value = json.data
     } else {
-      alert('讀取失敗: ' + json.message);
+      alert('讀取失敗: ' + json.message)
     }
   } catch (e) {
-    console.error(e);
-    alert('連線錯誤，無法取得資料');
+    console.error(e)
+    alert('連線錯誤，無法取得資料')
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-});
+})
 
 // 2. 老師按「核准」或「退回」
 const handleSignOff = async (status) => {
-  const actionText = status === 'APPROVED' ? '核准' : '退回';
-  if (!confirm(`確定要${actionText}這筆申請嗎？`)) return;
+  const actionText = status === 'APPROVED' ? '核准' : '退回'
+  if (!confirm(`確定要${actionText}這筆申請嗎？`)) return
 
   try {
     const res = await fetch('/api/signoff', {
@@ -45,24 +45,24 @@ const handleSignOff = async (status) => {
       body: JSON.stringify({
         id: bookingId,
         status: status, // 傳送 APPROVED 或 REJECTED
-        comment: comment.value
-      })
-    });
+        comment: comment.value,
+      }),
+    })
 
-    const json = await res.json();
+    const json = await res.json()
 
     if (json.success) {
-      alert(json.message);
+      alert(json.message)
       // 重新整理頁面以更新狀態
-      window.location.reload();
+      window.location.reload()
     } else {
-      alert('處理失敗: ' + json.error);
+      alert('處理失敗: ' + json.error)
     }
   } catch (e) {
-    console.error(e);
-    alert('系統錯誤，請稍後再試');
+    console.error(e)
+    alert('系統錯誤，請稍後再試')
   }
-};
+}
 </script>
 
 <template>
@@ -87,7 +87,10 @@ const handleSignOff = async (status) => {
         </div>
         <div class="field">
           <label>借用時間</label>
-          <div class="value">{{ new Date(requestData.borrow_date).toLocaleDateString() }} {{ requestData.start_time }} - {{ requestData.end_time }}</div>
+          <div class="value">
+            {{ new Date(requestData.borrow_date).toLocaleDateString() }}
+            {{ requestData.start_time }} - {{ requestData.end_time }}
+          </div>
         </div>
       </div>
 
@@ -125,7 +128,7 @@ const handleSignOff = async (status) => {
   padding: 30px;
   background: #fff;
   border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
@@ -145,7 +148,9 @@ h1 {
 }
 
 @media (max-width: 600px) {
-  .info-grid { grid-template-columns: 1fr; }
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .field label {
@@ -193,13 +198,32 @@ button {
   transition: opacity 0.3s;
 }
 
-button:hover { opacity: 0.9; }
+button:hover {
+  opacity: 0.9;
+}
 
-.btn-approve { background-color: #28a745; color: white; }
-.btn-reject { background-color: #dc3545; color: white; }
+.btn-approve {
+  background-color: #28a745;
+  color: white;
+}
+.btn-reject {
+  background-color: #dc3545;
+  color: white;
+}
 
-.status-message h2 { font-size: 24px; }
-.APPROVED { color: #28a745; }
-.REJECTED { color: #dc3545; }
-.loading, .error-msg { text-align: center; font-size: 18px; color: #666; }
+.status-message h2 {
+  font-size: 24px;
+}
+.APPROVED {
+  color: #28a745;
+}
+.REJECTED {
+  color: #dc3545;
+}
+.loading,
+.error-msg {
+  text-align: center;
+  font-size: 18px;
+  color: #666;
+}
 </style>

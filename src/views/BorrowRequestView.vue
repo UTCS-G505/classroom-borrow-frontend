@@ -256,7 +256,7 @@ const submitForm = async () => {
   // 3. 呼叫後端 API
   try {
     // 判斷要傳送的日期 (單次用 date, 多次用 multiStartDate)
-    const apiDate = result.borrowType === '多次借用' ? result.multiStartDate : result.date;
+    const apiDate = result.borrowType === '多次借用' ? result.multiStartDate : result.date
 
     const response = await fetch('/api/borrow', {
       method: 'POST',
@@ -265,25 +265,29 @@ const submitForm = async () => {
       },
       body: JSON.stringify({
         // --- 欄位對應 ---
-        userEmail: result.borrowerEmail,      // 前端 borrowerEmail -> 後端 userEmail
-        teacherEmail: result.teacherEmail,    // 前端 teacherEmail -> 後端 teacherEmail
+        userEmail: result.borrowerEmail, // 前端 borrowerEmail -> 後端 userEmail
+        teacherEmail: result.teacherEmail, // 前端 teacherEmail -> 後端 teacherEmail
         classroom: result.classroom,
         date: apiDate,
         time: `${result.startTime} - ${result.endTime}`,
-        activityName: result.eventName        // 前端 eventName -> 後端 activityName
+        activityName: result.eventName, // 前端 eventName -> 後端 activityName
       }),
-    });
+    })
 
-    const apiResult = await response.json();
+    const apiResult = await response.json()
 
     if (response.ok) {
       // --- 成功 ---
       console.log('送出資料：', result)
-      alert(`申請成功！\n${apiResult.message}`); // 顯示後端回傳的成功訊息
+      alert(`申請成功！\n${apiResult.message}`) // 顯示後端回傳的成功訊息
 
       // 清空表單資料
-      Object.keys(form).forEach((key) => { form[key] = '' })
-      Object.keys(errors).forEach((key) => { errors[key] = '' })
+      Object.keys(form).forEach((key) => {
+        form[key] = ''
+      })
+      Object.keys(errors).forEach((key) => {
+        errors[key] = ''
+      })
 
       // --- 執行路由跳轉 (移到成功之後才跳轉) ---
       if (result.borrowType === '多次借用') {
@@ -335,15 +339,13 @@ const submitForm = async () => {
 
       // 重置到第一階段
       currentStage.value = 1
-
     } else {
       // --- 失敗 ---
-      alert('❌ 申請失敗：' + apiResult.message);
+      alert('❌ 申請失敗：' + apiResult.message)
     }
-
   } catch (error) {
-    console.error('API Error:', error);
-    alert('連線錯誤，無法寄送申請信，請確認後端服務是否開啟。');
+    console.error('API Error:', error)
+    alert('連線錯誤，無法寄送申請信，請確認後端服務是否開啟。')
   }
 }
 
