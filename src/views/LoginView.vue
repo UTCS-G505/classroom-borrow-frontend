@@ -1,7 +1,8 @@
 <script setup>
-// filepath: d:\VuePractice\vue-LogIn\classroom-borrow-frontend\src\views\LoginView.vue
+// filepath: src/views/LoginView.vue
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios' // 1. 引入 axios
 
 // 登入相關
 const username = ref('')
@@ -27,12 +28,14 @@ const isLoginView = ref(true)
 
 const router = useRouter()
 
-const handleLogin = () => {
+// 2. 修改：加上 async，因為要等待後端回應
+const handleLogin = async () => {
   if (!username.value || !password.value || !role.value) {
     errorMessage.value = '請填寫所有欄位並選擇身份'
     return
   }
 
+  // --- 原本的邏輯 (保留) ---
   // 管理員登入
   if (username.value === 'admin' && password.value === '1234' && role.value === '管理員') {
     errorMessage.value = ''
@@ -49,11 +52,62 @@ const handleLogin = () => {
       errorMessage.value = ''
       router.push('/') // 跳回首頁
       return
+    } else {
+      errorMessage.value = '訪客帳號或密碼錯誤'
+      return
     }
   }
 
+  // --- 新增的邏輯 (SSO 串接) ---
+  // 如果是 學生 或 教師，就走後端 API 驗證
+  if (role.value === '學生' || role.value === '教師') {
+    try {
+      // 顯示登入中...
+      errorMessage.value = '登入中...'
+
+      // 發送請求給你的 Node.js 後端 (Port 8080)
+      // 注意：這裡是用你剛剛改好的後端 API
+      const response = await axios.post('http://localhost:8080/api/login', {
+        account: username.value,
+        password: password.value,
+      })
+
+      if (response.data.success) {
+        // 登入成功
+        errorMessage.value = ''
+        console.log('SSO 登入成功', response.data)
+
+        // 把 Token 存起來 (很重要，之後要帶這個 Token 去借教室)
+        if (response.data.user_data && response.data.user_data.access_token) {
+          localStorage.setItem('token', response.data.user_data.access_token)
+        }
+
+        // ★★★ 直接跳轉，不顯示 Alert ★★★
+        router.push('/')
+      } else {
+        // 後端回傳失敗 (雖然 API 通了，但帳密錯)
+        errorMessage.value = response.data.message || '帳號或密碼錯誤'
+      }
+    } catch (error) {
+      console.error(error)
+      // 判斷錯誤類型
+      if (error.code === 'ERR_NETWORK') {
+        errorMessage.value = '無法連線到伺服器，請確認後端 (node index.js) 是否已啟動'
+      } else if (error.response && error.response.data) {
+        // 顯示後端回傳的錯誤訊息 (例如 "帳號或密碼錯誤")
+        errorMessage.value = error.response.data.message || '登入失敗'
+      } else {
+        errorMessage.value = '發生未預期的錯誤'
+      }
+    }
+    return
+  }
+
+  // 如果都不是上面的情況
   errorMessage.value = '帳號或密碼錯誤'
 }
+
+// --- 以下完全保留不動 ---
 
 const handleRegister = () => {
   if (
@@ -134,7 +188,6 @@ const switchToRegister = () => {
 
 <template>
   <div class="page-wrapper">
-    <!-- 登入視圖 -->
     <div v-if="isLoginView" class="login-container">
       <h1 class="title">登入</h1>
       <form @submit.prevent="handleLogin">
@@ -189,7 +242,6 @@ const switchToRegister = () => {
       </form>
     </div>
 
-    <!-- 註冊視圖 -->
     <div v-else class="register-container">
       <h1 class="title">註冊</h1>
       <form @submit.prevent="handleRegister" class="register-form">
@@ -282,7 +334,7 @@ const switchToRegister = () => {
 </template>
 
 <style scoped>
-/* 調整頁面大小 */
+/* style 部分完全不用動，保持原樣即可 */
 .page-wrapper {
   min-height: 100vh;
   width: 100%;
