@@ -8,6 +8,7 @@ const requestData = ref(null)
 const isLoading = ref(true)
 const comment = ref('')
 
+// 1. 載入資料
 onMounted(async () => {
   if (!bookingId) return
   try {
@@ -27,11 +28,13 @@ onMounted(async () => {
   }
 })
 
+// 2. 助教簽核動作
 const handleSignOff = async (status) => {
-  if (!confirm(status === 'APPROVED' ? '確定核准？' : '確定退回？')) return
+  const actionText = status === 'APPROVED' ? '最終核准' : '退回申請'
+  if (!confirm(`確定要 ${actionText} 嗎？`)) return
 
   try {
-    const res = await fetch('/api/signoff', {
+    const res = await fetch('/api/ta-signoff', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -56,7 +59,7 @@ const handleSignOff = async (status) => {
 
 <template>
   <div class="signoff-container">
-    <h2 class="title">活動簽核 - 老師簽核</h2>
+    <h2 class="title">活動簽核 - 助教/系辦</h2>
 
     <div v-if="isLoading">載入中...</div>
 
@@ -68,7 +71,10 @@ const handleSignOff = async (status) => {
         </div>
         <div class="col">
           <label>申請人 (Email)</label>
-          <div class="value">{{ requestData.user_email }}</div>
+          <div class="value">
+            {{ requestData.applicant_name || '未填寫' }}
+            <span class="sub-text">({{ requestData.user_email }})</span>
+          </div>
         </div>
       </div>
 
@@ -86,31 +92,47 @@ const handleSignOff = async (status) => {
         </div>
       </div>
 
-      <div v-if="requestData.status === 'PENDING'">
+      <div class="row">
+        <div class="col-small">
+          <label>參與人數</label>
+          <div class="value">{{ requestData.participant_count || 0 }} 人</div>
+        </div>
+        <div class="col-large">
+          <label>活動說明</label>
+          <div class="value description-box">
+            {{ requestData.description || '無詳細說明' }}
+          </div>
+        </div>
+      </div>
+
+      <div v-if="requestData.status === 'TEACHER_APPROVED'">
+        <div class="info-box">
+          <p>✅ 指導老師已核准，請助教進行最終確認。</p>
+        </div>
+
         <div class="input-group">
-          <label>簽核意見 / 退回理由：</label>
-          <textarea v-model="comment" placeholder="請輸入您的意見（選填）"></textarea>
+          <label>助教備註 / 退回理由：</label>
+          <textarea v-model="comment" placeholder="請輸入備註..."></textarea>
         </div>
 
         <div class="btn-group">
-          <button class="btn-approve" @click="handleSignOff('APPROVED')">核准</button>
+          <button class="btn-approve" @click="handleSignOff('APPROVED')">最終核准</button>
           <button class="btn-reject" @click="handleSignOff('REJECTED')">退回</button>
         </div>
       </div>
 
-      <div
-        v-else-if="requestData.status === 'TEACHER_APPROVED' || requestData.status === 'APPROVED'"
-        class="status-msg success"
-      >
+      <div v-else-if="requestData.status === 'APPROVED'" class="status-msg success">
         <h2>此申請單已核准</h2>
+        <p>流程已結案</p>
       </div>
 
       <div v-else-if="requestData.status === 'REJECTED'" class="status-msg error">
         <h2>此申請單已退回</h2>
       </div>
 
-      <div v-else class="status-msg">
-        <h2>狀態：{{ requestData.status }}</h2>
+      <div v-else-if="requestData.status === 'PENDING'" class="status-msg pending">
+        <h2>等待指導老師簽核中</h2>
+        <p>尚未輪到助教簽核</p>
       </div>
     </div>
     <div v-else>找不到此申請單資料</div>
@@ -132,6 +154,7 @@ const handleSignOff = async (status) => {
   margin-bottom: 30px;
   color: #333;
 }
+
 .row {
   display: flex;
   gap: 20px;
@@ -142,6 +165,13 @@ const handleSignOff = async (status) => {
   flex: 1;
   min-width: 200px;
 }
+.col-small {
+  flex: 0 0 150px;
+}
+.col-large {
+  flex: 2;
+}
+
 label {
   display: block;
   font-weight: bold;
@@ -155,17 +185,37 @@ label {
   border: 1px solid #eee;
   color: #333;
 }
+.sub-text {
+  font-size: 0.9em;
+  color: #888;
+  margin-left: 5px;
+}
+.description-box {
+  min-height: 60px;
+  white-space: pre-wrap;
+}
+
+.info-box {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
 .input-group {
   margin-top: 20px;
 }
 textarea {
   width: 100%;
-  height: 100px;
+  height: 80px;
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
   resize: vertical;
 }
+
 .btn-group {
   margin-top: 30px;
   display: flex;
@@ -173,7 +223,7 @@ textarea {
   justify-content: center;
 }
 button {
-  padding: 12px 40px;
+  padding: 12px 30px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -185,12 +235,15 @@ button {
 button:hover {
   opacity: 0.9;
 }
+
 .btn-approve {
   background-color: #28a745;
 }
 .btn-reject {
   background-color: #dc3545;
 }
+
+/* 狀態樣式 */
 .status-msg {
   margin-top: 40px;
   text-align: center;
@@ -203,6 +256,10 @@ button:hover {
 }
 .status-msg.error h2 {
   color: #dc3545;
+  margin: 0;
+}
+.status-msg.pending h2 {
+  color: #f0ad4e;
   margin: 0;
 }
 </style>

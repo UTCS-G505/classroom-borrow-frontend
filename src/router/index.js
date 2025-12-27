@@ -7,6 +7,7 @@ import recordsView from '../views/recordsView.vue'
 import LoginView from '../views/LoginView.vue'
 // 👇 1. 引入剛剛建立的簽核頁面 (請確認你的檔案路徑是否在 views 資料夾)
 import TeacherSignOff from '../views/TeacherSignOff.vue'
+import TASignOff from '../views/TASignOff.vue'
 
 const routes = [
   {
@@ -44,6 +45,11 @@ const routes = [
     path: '/teacher-signoff', // 對應 Email 連結中的路徑
     name: 'TeacherSignOff',
     component: TeacherSignOff,
+  },
+  {
+    path: '/ta-signoff',
+    name: 'TASignOff',
+    component: TASignOff,
   },
 ]
 
