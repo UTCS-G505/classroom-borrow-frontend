@@ -67,7 +67,7 @@ const handleLogin = async () => {
       errorMessage.value = '登入中...'
 
       // 注意：請確認您的後端 Port 是 8080 還是其他數字
-      const response = await axios.post('http://localhost:8080/api/login', {
+      const response = await axios.post('http://localhost:3000/api/login', {
         account: username.value,
         password: password.value,
       })
