@@ -17,7 +17,7 @@ const links = [
 const isMobileMenuOpen = ref(false)
 const isScrolled = ref(false)
 
-// 使用者狀態
+// 狀態變數
 const isLoggedIn = ref(false)
 const currentUsername = ref('')
 const isUserMenuOpen = ref(false)
@@ -39,40 +39,28 @@ const toggleUserMenu = () => {
   isUserMenuOpen.value = !isUserMenuOpen.value
 }
 
+// 登出功能
 const handleLogout = () => {
   localStorage.removeItem('token')
+  localStorage.removeItem('username')
+  localStorage.removeItem('role')
+
   isLoggedIn.value = false
   currentUsername.value = ''
   isUserMenuOpen.value = false
   isMobileMenuOpen.value = false
+
   router.push('/login')
 }
 
-// 檢查登入狀態
+// 核心邏輯：直接讀取 localStorage
 const checkLoginStatus = () => {
+  const storedUsername = localStorage.getItem('username')
   const token = localStorage.getItem('token')
-  if (token) {
-    try {
-      const base64Url = token.split('.')[1]
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-      const jsonPayload = decodeURIComponent(
-        window
-          .atob(base64)
-          .split('')
-          .map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-          })
-          .join(''),
-      )
 
-      const payload = JSON.parse(jsonPayload)
-      currentUsername.value = payload.sub || payload.id || 'User'
-      isLoggedIn.value = true
-    } catch (e) {
-      console.error('Token 解析失敗', e)
-      localStorage.removeItem('token')
-      isLoggedIn.value = false
-    }
+  if (token && storedUsername) {
+    isLoggedIn.value = true
+    currentUsername.value = storedUsername
   } else {
     isLoggedIn.value = false
     currentUsername.value = ''
@@ -83,6 +71,7 @@ watch(
   () => route.path,
   () => {
     checkLoginStatus()
+    closeMobileMenu()
   },
 )
 
@@ -101,7 +90,6 @@ onMounted(() => {
       isUserMenuOpen.value = false
     }
   }
-
   const clickOutsideHandler = (e) => {
     if (isUserMenuOpen.value && !e.target.closest('.user-menu-container')) {
       isUserMenuOpen.value = false
@@ -160,7 +148,7 @@ onMounted(() => {
         <RouterLink
           v-if="!isLoggedIn"
           to="/login"
-          class="nav-link login-btn"
+          class="nav-link"
           active-class="active"
           @click="closeMobileMenu"
         >
@@ -168,7 +156,7 @@ onMounted(() => {
         </RouterLink>
 
         <div v-else class="user-menu-container">
-          <button class="nav-link user-btn" @click="toggleUserMenu">
+          <button class="nav-link user-btn" @click.stop="toggleUserMenu">
             <span class="username-text">{{ currentUsername }}</span>
             <span class="arrow" :class="{ rotate: isUserMenuOpen }">▼</span>
           </button>
@@ -219,7 +207,6 @@ onMounted(() => {
   z-index: 1000;
   transition: background-color 0.3s ease;
 }
-
 .navbar::before {
   content: '';
   position: absolute;
@@ -232,11 +219,9 @@ onMounted(() => {
     background-color 0.3s ease,
     backdrop-filter 0.3s ease;
 }
-
 .navbar.scrolled {
   --nav-bg: rgba(255, 255, 255, 0.5);
 }
-
 .nav-brand .brand-link {
   font-weight: 600;
   font-size: 1.25rem;
@@ -247,13 +232,11 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
 }
-
 .logo {
   height: 40px;
   width: auto;
   object-fit: contain;
 }
-
 .nav-links {
   list-style: none;
   display: flex;
@@ -262,8 +245,6 @@ onMounted(() => {
   padding: 0;
   align-items: center;
 }
-
-/* Nav Link 樣式 */
 .nav-link {
   text-decoration: none;
   padding: 0.35rem 0.65rem;
@@ -280,66 +261,52 @@ onMounted(() => {
   border: none;
   font-family: inherit;
 }
-
 .nav-link:hover,
 .nav-link.active {
   background: rgba(0, 0, 0, 0.08);
 }
 
-/* === 使用者按鈕 (學號) === */
+/* 原本的 .login-btn 樣式已移除，現在「登入」會跟其他連結一樣顏色 */
+
 .user-menu-container {
   position: relative;
 }
-
-/* 這是你要的「淺淺背景色」設計 */
 .user-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-
-  background-color: #f3f4f6; /* 淺灰色背景 */
-  padding: 0.4rem 1rem; /* 增加內距 */
-  border-radius: 20px; /* 膠囊狀圓角 */
-
-  border: none;
-  color: #444;
+  background-color: #f3f4f6;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  color: #333;
   font-weight: 600;
   font-size: 1rem;
-  transition: all 0.2s ease;
 }
-
 .user-btn:hover {
-  background-color: #e5e7eb; /* 滑鼠移上去變深一點點 */
-  color: #000;
-  transform: translateY(-1px);
+  background-color: #e5e7eb;
 }
-
 .arrow {
   font-size: 0.8rem;
   color: #666;
   transition: transform 0.3s ease;
 }
-
 .arrow.rotate {
   transform: rotate(180deg);
 }
-
-/* === 下拉選單 === */
 .dropdown-menu {
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 5px;
+  margin-top: 8px;
   background: white;
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  min-width: 120px;
+  min-width: 100px;
   padding: 5px 0;
   overflow: hidden;
   animation: fadeIn 0.2s ease;
 }
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -350,32 +317,25 @@ onMounted(() => {
     transform: translateY(0);
   }
 }
-
 .dropdown-item {
-  display: flex; /* 讓登出文字跟箭頭併排 */
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   width: 100%;
   padding: 10px 15px;
   background: transparent;
   border: none;
-  color: #444;
+  color: #dc3545;
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.2s;
+  font-weight: 500;
 }
-
 .dropdown-item:hover {
-  background-color: #f5f5f5;
-  color: #d9534f;
+  background-color: #fff5f5;
 }
-
 .logout-icon-svg {
   opacity: 0.7;
 }
-
-/* Mobile */
 .mobile-menu-btn {
   display: none;
   flex-direction: column;
@@ -389,7 +349,6 @@ onMounted(() => {
   z-index: 1200;
   position: relative;
 }
-
 .hamburger-line {
   width: 2rem;
   height: 0.25rem;
@@ -399,7 +358,6 @@ onMounted(() => {
   position: relative;
   transform-origin: 1px;
 }
-
 .hamburger-line.active:nth-child(1) {
   transform: rotate(45deg);
 }
@@ -410,7 +368,6 @@ onMounted(() => {
 .hamburger-line.active:nth-child(3) {
   transform: rotate(-45deg);
 }
-
 @media (max-width: 768px) {
   .mobile-menu-btn {
     display: flex;
@@ -421,7 +378,6 @@ onMounted(() => {
   .brand-text {
     font-size: 1rem;
   }
-
   .nav-links {
     position: fixed;
     inset: 0;
@@ -429,53 +385,41 @@ onMounted(() => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
-    margin: 0;
-    background: rgba(255, 255, 255, 0.95);
+    gap: 1rem;
+    background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     transform: translateY(-100%);
     opacity: 0;
     pointer-events: none;
     transition:
-      transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 0.35s ease;
+      transform 0.45s,
+      opacity 0.35s;
     z-index: 1100;
   }
-
   .nav-links.mobile-open {
     transform: translateY(0);
     opacity: 1;
     pointer-events: auto;
   }
-
   .nav-link {
     display: block;
     padding: 1rem 2rem;
     font-size: 1.2rem;
-    width: auto;
-    border-radius: 8px;
     text-align: center;
-    min-width: 200px;
-  }
-
-  .user-menu-container {
     width: 100%;
-    margin-left: 0;
+  }
+  .user-menu-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
   }
-
-  /* 手機版也要稍微調整一下按鈕，讓它在手機上也好看 */
   .user-btn {
-    width: auto;
     font-size: 1.2rem;
-    padding: 10px 20px;
-    /* 手機版也套用淺灰背景，保持一致性 */
-    background-color: #f3f4f6;
+    padding: 1rem 2rem;
+    background: transparent;
   }
-
   .dropdown-menu {
     position: static;
     box-shadow: none;
@@ -483,16 +427,9 @@ onMounted(() => {
     background: transparent;
     padding: 0;
     margin-top: 0;
-    width: auto;
     animation: none;
   }
-  .dropdown-item {
-    font-size: 1.1rem;
-    color: #666;
-    padding: 10px;
-  }
 }
-
 @media (max-width: 1024px) and (min-width: 769px) {
   .navbar {
     padding: 0 1rem;

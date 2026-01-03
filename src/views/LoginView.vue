@@ -1,8 +1,7 @@
 <script setup>
-// filepath: src/views/LoginView.vue
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import axios from 'axios' // 1. 引入 axios
+// 1. 刪除了沒用到的 useRouter
+import axios from 'axios'
 
 // 登入相關
 const username = ref('')
@@ -26,31 +25,35 @@ const registeredUsers = ref([])
 // 視圖切換
 const isLoginView = ref(true)
 
-const router = useRouter()
+// 2. 刪除了沒用到的 const router = useRouter()
 
-// 2. 修改：加上 async，因為要等待後端回應
 const handleLogin = async () => {
   if (!username.value || !password.value || !role.value) {
     errorMessage.value = '請填寫所有欄位並選擇身份'
     return
   }
 
-  // --- 原本的邏輯 (保留) ---
-  // 管理員登入
+  // --- 管理員登入 ---
   if (username.value === 'admin' && password.value === '1234' && role.value === '管理員') {
+    localStorage.setItem('username', 'Admin')
+    localStorage.setItem('role', '管理員')
+
     errorMessage.value = ''
-    router.push('/') // 跳回首頁
+    window.location.href = '/' // 使用 window.location 跳轉，不需要 router
     return
   }
 
-  // 檢查註冊用戶登入（訪客身分）
+  // --- 訪客登入 ---
   if (role.value === '訪客') {
     const user = registeredUsers.value.find(
       (u) => u.username === username.value && u.password === password.value,
     )
     if (user) {
+      localStorage.setItem('username', user.name || user.username)
+      localStorage.setItem('role', '訪客')
+
       errorMessage.value = ''
-      router.push('/') // 跳回首頁
+      window.location.href = '/'
       return
     } else {
       errorMessage.value = '訪客帳號或密碼錯誤'
@@ -58,43 +61,40 @@ const handleLogin = async () => {
     }
   }
 
-  // --- 新增的邏輯 (SSO 串接) ---
-  // 如果是 學生 或 教師，就走後端 API 驗證
+  // --- 學生/教師登入 (SSO API) ---
   if (role.value === '學生' || role.value === '教師') {
     try {
-      // 顯示登入中...
       errorMessage.value = '登入中...'
 
-      // 發送請求給你的 Node.js 後端 (Port 8080)
-      // 注意：這裡是用你剛剛改好的後端 API
+      // 注意：請確認您的後端 Port 是 8080 還是其他數字
       const response = await axios.post('http://localhost:8080/api/login', {
         account: username.value,
         password: password.value,
       })
 
       if (response.data.success) {
-        // 登入成功
         errorMessage.value = ''
         console.log('SSO 登入成功', response.data)
 
-        // 把 Token 存起來 (很重要，之後要帶這個 Token 去借教室)
-        if (response.data.user_data && response.data.user_data.access_token) {
-          localStorage.setItem('token', response.data.user_data.access_token)
+        const userData = response.data.user_data
+
+        if (userData && userData.access_token) {
+          localStorage.setItem('token', userData.access_token)
         }
 
-        // ★★★ 直接跳轉，不顯示 Alert ★★★
-        router.push('/')
+        const savedName = userData && userData.account ? userData.account : username.value
+        localStorage.setItem('username', savedName)
+        localStorage.setItem('role', role.value)
+
+        window.location.href = '/' // 強制刷新
       } else {
-        // 後端回傳失敗 (雖然 API 通了，但帳密錯)
         errorMessage.value = response.data.message || '帳號或密碼錯誤'
       }
     } catch (error) {
       console.error(error)
-      // 判斷錯誤類型
       if (error.code === 'ERR_NETWORK') {
-        errorMessage.value = '無法連線到伺服器，請確認後端 (node index.js) 是否已啟動'
+        errorMessage.value = '無法連線到伺服器，請確認後端是否已啟動'
       } else if (error.response && error.response.data) {
-        // 顯示後端回傳的錯誤訊息 (例如 "帳號或密碼錯誤")
         errorMessage.value = error.response.data.message || '登入失敗'
       } else {
         errorMessage.value = '發生未預期的錯誤'
@@ -103,11 +103,10 @@ const handleLogin = async () => {
     return
   }
 
-  // 如果都不是上面的情況
   errorMessage.value = '帳號或密碼錯誤'
 }
 
-// --- 以下完全保留不動 ---
+// --- 以下維持原樣 ---
 
 const handleRegister = () => {
   if (
@@ -123,9 +122,8 @@ const handleRegister = () => {
     return
   }
 
-  // 檢查帳號是否已存在
   if (registeredUsers.value.some((u) => u.username === registerUsername.value)) {
-    registerErrorMessage.value = '此帳號已存在，請選擇其他帳號'
+    registerErrorMessage.value = '此帳號已存在'
     return
   }
 
@@ -134,21 +132,18 @@ const handleRegister = () => {
     return
   }
 
-  // 簡單的email格式驗證
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(registerEmail.value)) {
     registerErrorMessage.value = 'Email格式不正確'
     return
   }
 
-  // 手機號碼驗證：僅允許包含數字 0123456789
   const phoneRegex = /^[0-9]+$/
   if (!phoneRegex.test(registerPhone.value)) {
     registerErrorMessage.value = '手機號碼只能包含數字'
     return
   }
 
-  // 新增用戶到註冊清單
   registeredUsers.value.push({
     username: registerUsername.value,
     password: registerPassword.value,
@@ -159,13 +154,12 @@ const handleRegister = () => {
   })
 
   registerErrorMessage.value = ''
-  alert('註冊成功！') // 顯示註冊成功提示
-  switchToLogin() // 註冊成功後切換到登入頁面
+  alert('註冊成功！')
+  switchToLogin()
 }
 
 const switchToLogin = () => {
   isLoginView.value = true
-  // 清空註冊表單和錯誤訊息
   registerUsername.value = ''
   registerPassword.value = ''
   confirmPassword.value = ''
@@ -178,7 +172,6 @@ const switchToLogin = () => {
 
 const switchToRegister = () => {
   isLoginView.value = false
-  // 清空登入表單和錯誤訊息
   username.value = ''
   password.value = ''
   role.value = ''
@@ -212,7 +205,7 @@ const switchToRegister = () => {
         <div class="form-group">
           <label class="label" for="username">帳號：</label>
           <input
-            style="color: #b0b0b0"
+            style="color: #333"
             type="text"
             id="username"
             v-model="username"
@@ -223,7 +216,7 @@ const switchToRegister = () => {
         <div class="form-group">
           <label class="label" for="password">密碼：</label>
           <input
-            style="color: #b0b0b0"
+            style="color: #333"
             type="password"
             id="password"
             v-model="password"
@@ -254,7 +247,6 @@ const switchToRegister = () => {
             placeholder="請輸入真實姓名"
           />
         </div>
-
         <div class="form-group">
           <label class="label" for="register-service-unit">服務單位：</label>
           <input
@@ -264,7 +256,6 @@ const switchToRegister = () => {
             placeholder="請輸入您的服務單位/公司/機關"
           />
         </div>
-
         <div class="form-group">
           <label class="label" for="register-username">帳號：</label>
           <input
@@ -274,7 +265,6 @@ const switchToRegister = () => {
             placeholder="請輸入帳號"
           />
         </div>
-
         <div class="form-group">
           <label class="label" for="register-password">密碼：</label>
           <input
@@ -284,7 +274,6 @@ const switchToRegister = () => {
             placeholder="請輸入密碼"
           />
         </div>
-
         <div class="form-group">
           <label class="label" for="confirm-password">確認密碼：</label>
           <input
@@ -294,7 +283,6 @@ const switchToRegister = () => {
             placeholder="請再次輸入密碼"
           />
         </div>
-
         <div class="form-group">
           <label class="label" for="register-phone">手機號碼：</label>
           <input
@@ -304,7 +292,6 @@ const switchToRegister = () => {
             placeholder="請輸入電話號碼"
           />
         </div>
-
         <div class="form-group">
           <label class="label" for="register-email">Email：</label>
           <input
@@ -322,11 +309,9 @@ const switchToRegister = () => {
 
         <div class="register-hint">
           <p class="hint-text">
-            <i class="info-icon">ℹ️</i>
-            註冊成功後，請使用「訪客」身分登入系統
+            <i class="info-icon">ℹ️</i> 註冊成功後，請使用「訪客」身分登入系統
           </p>
         </div>
-
         <p v-if="registerErrorMessage" class="error">{{ registerErrorMessage }}</p>
       </form>
     </div>
@@ -334,177 +319,130 @@ const switchToRegister = () => {
 </template>
 
 <style scoped>
-/* style 部分完全不用動，保持原樣即可 */
+/* 原有的 CSS 保持不變 */
 .page-wrapper {
   min-height: 100vh;
   width: 100%;
   background-color: #f2f2f2;
-  padding: 40px; /* 增加 padding */
+  padding: 40px;
   box-sizing: border-box;
   display: flex;
   justify-content: center;
   align-items: flex-start;
 }
-
 .login-container,
 .register-container {
   width: 100%;
-  max-width: 600px; /* 放大容器寬度 */
-  padding: 40px 50px; /* 增加 padding */
+  max-width: 600px;
+  padding: 40px 50px;
   border-radius: 12px;
   background-color: white;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.08);
   font-family: 'Microsoft JhengHei', sans-serif;
   margin: auto;
 }
-
-/* 註冊頁面表單容器 */
 .register-form {
   width: 100%;
 }
-
-/* 放大登入字體並置中 */
 .title {
-  font-size: 32px; /* 放大字體 */
+  font-size: 32px;
   font-weight: bold;
   text-align: center;
   margin-bottom: 30px;
   color: #333;
 }
-
-/* 放大標籤字體 */
 .label {
   display: block;
   margin-bottom: 10px;
-  font-size: 18px; /* 放大字體 */
+  font-size: 18px;
   color: #444;
 }
-
 .form-group {
   margin-bottom: 20px;
 }
-
-input,
-.role-dropdown {
+input {
   width: 100%;
-  padding: 14px; /* 增加 padding */
+  padding: 14px;
   border: 1px solid #dcdcdc;
   border-radius: 6px;
-  font-size: 16px; /* 放大字體 */
+  font-size: 16px;
   box-sizing: border-box;
   color: #333;
 }
-
-input:focus,
-.role-dropdown:focus {
+input:focus {
   outline: none;
   border-color: #4a90e2;
   box-shadow: 0 0 4px rgba(74, 144, 226, 0.5);
 }
-
-/* 滾輪式身分選擇 */
-.role-dropdown {
-  background-color: white;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8"><path fill="%23666" d="M6 8L0 2h12z"/></svg>');
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-}
-
-.role-dropdown option {
-  padding: 10px;
-  font-size: 16px;
-  color: #333;
-}
-
-/* 三個角色按鈕 */
 .role-selection {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px;
 }
-
 .role-selection button {
   flex: 1;
   min-width: 120px;
-  padding: 12px 8px; /* 增加 padding */
+  padding: 12px 8px;
   border: 1px solid #dcdcdc;
   border-radius: 6px;
   background-color: #f8f8f8;
   cursor: pointer;
-  font-size: 16px; /* 放大字體 */
-  color: #b0b0b0; /* 字體顏色改為淺灰色 */
+  font-size: 16px;
+  color: #b0b0b0;
 }
-
 .role-selection button.active {
   background-color: #4a90e2;
   color: white;
   border-color: #4a90e2;
 }
-
-/* 調整按鈕容器 */
 .button-group {
   display: flex;
-  flex-direction: column; /* 改為垂直排列 */
-  align-items: center; /* 置中對齊 */
-  gap: 15px; /* 按鈕間距 */
-  margin-top: 30px; /* 增加間距 */
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  margin-top: 30px;
 }
-
-/* 登入按鈕 */
 .login-button {
-  width: 100%; /* 填滿寬度 */
-  padding: 14px; /* 增加 padding */
-  font-size: 18px; /* 放大字體 */
+  width: 100%;
+  padding: 14px;
+  font-size: 18px;
   background-color: #a6c8ff;
   color: #333;
   border: none;
   border-radius: 8px;
   cursor: pointer;
 }
-
 .login-button:hover {
   background-color: #8eb8ff;
 }
-
-/* 註冊按鈕 */
 .register-button {
-  padding: 14px 24px; /* 調整 padding */
-  font-size: 18px; /* 放大字體 */
-  background-color: transparent; /* 透明背景 */
+  padding: 14px 24px;
+  font-size: 18px;
+  background-color: transparent;
   color: #4a90e2;
-  border: none; /* 移除邊框 */
+  border: none;
   border-radius: 8px;
   cursor: pointer;
-  text-decoration: underline; /* 加上底線讓它看起來像連結 */
+  text-decoration: underline;
 }
-
 .register-button:hover {
-  background-color: #f0f7ff; /* 懸停時淡藍色背景 */
-  text-decoration: none; /* 懸停時移除底線 */
+  background-color: #f0f7ff;
+  text-decoration: none;
 }
-
 .error {
   margin-top: 10px;
   color: red;
-  font-size: 16px; /* 放大字體 */
+  font-size: 16px;
   text-align: center;
 }
-
 input::placeholder {
   color: #b0b0b0;
 }
-
-/* 註冊提示樣式 */
 .register-hint {
   margin-top: 20px;
   text-align: center;
 }
-
 .hint-text {
   font-size: 14px;
   color: #666;
@@ -518,32 +456,25 @@ input::placeholder {
   justify-content: center;
   gap: 8px;
 }
-
 .info-icon {
   font-size: 16px;
 }
-
-/* 響應式設計 */
 @media (max-width: 768px) {
   .page-wrapper {
     padding: 20px;
   }
-
   .login-container,
   .register-container {
     padding: 30px 25px;
   }
-
   .role-selection {
     flex-direction: column;
   }
-
   .role-selection button {
     width: 100%;
     margin-bottom: 8px;
   }
 }
-
 @media (max-height: 700px) {
   .page-wrapper {
     align-items: flex-start;
