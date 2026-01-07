@@ -1,12 +1,10 @@
 <script setup>
 import { ref } from 'vue'
-// 1. 刪除了沒用到的 useRouter
 import axios from 'axios'
 
 // 登入相關
 const username = ref('')
 const password = ref('')
-const role = ref('')
 const errorMessage = ref('')
 
 // 註冊相關
@@ -25,85 +23,49 @@ const registeredUsers = ref([])
 // 視圖切換
 const isLoginView = ref(true)
 
-// 2. 刪除了沒用到的 const router = useRouter()
-
 const handleLogin = async () => {
-  if (!username.value || !password.value || !role.value) {
-    errorMessage.value = '請填寫所有欄位並選擇身份'
+  if (!username.value || !password.value) {
+    errorMessage.value = '請填寫所有欄位'
     return
   }
 
-  // --- 管理員登入 ---
-  if (username.value === 'admin' && password.value === '1234' && role.value === '管理員') {
-    localStorage.setItem('username', 'Admin')
-    localStorage.setItem('role', '管理員')
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
-    errorMessage.value = ''
-    window.location.href = '/' // 使用 window.location 跳轉，不需要 router
-    return
-  }
+  // --- SSO API 登入 ---
+  try {
+    errorMessage.value = '登入中...'
 
-  // --- 訪客登入 ---
-  if (role.value === '訪客') {
-    const user = registeredUsers.value.find(
-      (u) => u.username === username.value && u.password === password.value,
-    )
-    if (user) {
-      localStorage.setItem('username', user.name || user.username)
-      localStorage.setItem('role', '訪客')
-
-      errorMessage.value = ''
-      window.location.href = '/'
-      return
-    } else {
-      errorMessage.value = '訪客帳號或密碼錯誤'
-      return
-    }
-  }
-
-  // --- 學生/教師登入 (SSO API) ---
-  if (role.value === '學生' || role.value === '教師') {
-    try {
-      errorMessage.value = '登入中...'
-
-      // 注意：請確認您的後端 Port 是 8080 還是其他數字
-      const response = await axios.post('http://localhost:3000/api/login', {
+    const response = await axios.post(
+      API_URL + '/api/login',
+      {
         account: username.value,
         password: password.value,
-      })
+      },
+      { withCredentials: true },
+    )
 
-      if (response.data.success) {
-        errorMessage.value = ''
-        console.log('SSO 登入成功', response.data)
+    if (response.data.success) {
+      errorMessage.value = ''
+      console.log('SSO 登入成功:', response.data)
 
-        const userData = response.data.user_data
+      const userData = response.data.data
+      const uid = userData.uid
+      localStorage.setItem('uid', uid)
 
-        if (userData && userData.access_token) {
-          localStorage.setItem('token', userData.access_token)
-        }
-
-        const savedName = userData && userData.account ? userData.account : username.value
-        localStorage.setItem('username', savedName)
-        localStorage.setItem('role', role.value)
-
-        window.location.href = '/' // 強制刷新
-      } else {
-        errorMessage.value = response.data.message || '帳號或密碼錯誤'
-      }
-    } catch (error) {
-      console.error(error)
-      if (error.code === 'ERR_NETWORK') {
-        errorMessage.value = '無法連線到伺服器，請確認後端是否已啟動'
-      } else if (error.response && error.response.data) {
-        errorMessage.value = error.response.data.message || '登入失敗'
-      } else {
-        errorMessage.value = '發生未預期的錯誤'
-      }
+      // window.location.href = '/' // 強制刷新
+    } else {
+      errorMessage.value = response.data.message || '帳號或密碼錯誤'
     }
-    return
+  } catch (error) {
+    console.error(error)
+    if (error.code === 'ERR_NETWORK') {
+      errorMessage.value = '無法連線到伺服器，請確認後端是否已啟動'
+    } else if (error.response && error.response.data) {
+      errorMessage.value = error.response.data.message || '登入失敗'
+    } else {
+      errorMessage.value = '發生未預期的錯誤'
+    }
   }
-
-  errorMessage.value = '帳號或密碼錯誤'
 }
 
 // --- 以下維持原樣 ---
@@ -174,7 +136,6 @@ const switchToRegister = () => {
   isLoginView.value = false
   username.value = ''
   password.value = ''
-  role.value = ''
   errorMessage.value = ''
 }
 </script>
@@ -184,24 +145,6 @@ const switchToRegister = () => {
     <div v-if="isLoginView" class="login-container">
       <h1 class="title">登入</h1>
       <form @submit.prevent="handleLogin">
-        <div class="form-group">
-          <label class="label">選擇身分:</label>
-          <div class="role-selection">
-            <button type="button" :class="{ active: role === '學生' }" @click="role = '學生'">
-              學生
-            </button>
-            <button type="button" :class="{ active: role === '教師' }" @click="role = '教師'">
-              教師
-            </button>
-            <button type="button" :class="{ active: role === '管理員' }" @click="role = '管理員'">
-              管理員
-            </button>
-            <button type="button" :class="{ active: role === '訪客' }" @click="role = '訪客'">
-              訪客
-            </button>
-          </div>
-        </div>
-
         <div class="form-group">
           <label class="label" for="username">帳號：</label>
           <input
@@ -374,28 +317,6 @@ input:focus {
   border-color: #4a90e2;
   box-shadow: 0 0 4px rgba(74, 144, 226, 0.5);
 }
-.role-selection {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.role-selection button {
-  flex: 1;
-  min-width: 120px;
-  padding: 12px 8px;
-  border: 1px solid #dcdcdc;
-  border-radius: 6px;
-  background-color: #f8f8f8;
-  cursor: pointer;
-  font-size: 16px;
-  color: #b0b0b0;
-}
-.role-selection button.active {
-  background-color: #4a90e2;
-  color: white;
-  border-color: #4a90e2;
-}
 .button-group {
   display: flex;
   flex-direction: column;
@@ -466,13 +387,6 @@ input::placeholder {
   .login-container,
   .register-container {
     padding: 30px 25px;
-  }
-  .role-selection {
-    flex-direction: column;
-  }
-  .role-selection button {
-    width: 100%;
-    margin-bottom: 8px;
   }
 }
 @media (max-height: 700px) {
