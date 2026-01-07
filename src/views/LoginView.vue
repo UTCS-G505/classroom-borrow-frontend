@@ -1,27 +1,15 @@
 <script setup>
 import { ref } from 'vue'
-import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
+import router from '@/router'
 
 // 登入相關
 const username = ref('')
 const password = ref('')
 const errorMessage = ref('')
 
-// 註冊相關
-const registerUsername = ref('')
-const registerPassword = ref('')
-const confirmPassword = ref('')
-const registerServiceUnit = ref('')
-const registerName = ref('')
-const registerPhone = ref('')
-const registerEmail = ref('')
-const registerErrorMessage = ref('')
-
-// 儲存已註冊的用戶
-const registeredUsers = ref([])
-
-// 視圖切換
-const isLoginView = ref(true)
+// Auth store
+const authStore = useAuthStore()
 
 const handleLogin = async () => {
   if (!username.value || !password.value) {
@@ -29,120 +17,28 @@ const handleLogin = async () => {
     return
   }
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+  errorMessage.value = '登入中...'
 
-  // --- SSO API 登入 ---
-  try {
-    errorMessage.value = '登入中...'
+  const result = await authStore.login(username.value, password.value)
 
-    const response = await axios.post(
-      API_URL + '/api/login',
-      {
-        account: username.value,
-        password: password.value,
-      },
-      { withCredentials: true },
-    )
-
-    if (response.data.success) {
-      errorMessage.value = ''
-      console.log('SSO 登入成功:', response.data)
-
-      const userData = response.data.data
-      const uid = userData.uid
-      localStorage.setItem('uid', uid)
-
-      // window.location.href = '/' // 強制刷新
-    } else {
-      errorMessage.value = response.data.message || '帳號或密碼錯誤'
-    }
-  } catch (error) {
-    console.error(error)
-    if (error.code === 'ERR_NETWORK') {
-      errorMessage.value = '無法連線到伺服器，請確認後端是否已啟動'
-    } else if (error.response && error.response.data) {
-      errorMessage.value = error.response.data.message || '登入失敗'
-    } else {
-      errorMessage.value = '發生未預期的錯誤'
-    }
+  if (result.success) {
+    errorMessage.value = ''
+    // navigate to previous page or home
+    const redirectPath = router.currentRoute.value.query.redirect || '/'
+    router.push(redirectPath)
+  } else {
+    errorMessage.value = result.message
   }
 }
 
-// --- 以下維持原樣 ---
-
-const handleRegister = () => {
-  if (
-    !registerUsername.value ||
-    !registerPassword.value ||
-    !confirmPassword.value ||
-    !registerServiceUnit.value ||
-    !registerName.value ||
-    !registerPhone.value ||
-    !registerEmail.value
-  ) {
-    registerErrorMessage.value = '請填寫所有欄位'
-    return
-  }
-
-  if (registeredUsers.value.some((u) => u.username === registerUsername.value)) {
-    registerErrorMessage.value = '此帳號已存在'
-    return
-  }
-
-  if (registerPassword.value !== confirmPassword.value) {
-    registerErrorMessage.value = '密碼確認不一致'
-    return
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(registerEmail.value)) {
-    registerErrorMessage.value = 'Email格式不正確'
-    return
-  }
-
-  const phoneRegex = /^[0-9]+$/
-  if (!phoneRegex.test(registerPhone.value)) {
-    registerErrorMessage.value = '手機號碼只能包含數字'
-    return
-  }
-
-  registeredUsers.value.push({
-    username: registerUsername.value,
-    password: registerPassword.value,
-    name: registerName.value,
-    serviceUnit: registerServiceUnit.value,
-    phone: registerPhone.value,
-    email: registerEmail.value,
-  })
-
-  registerErrorMessage.value = ''
-  alert('註冊成功！')
-  switchToLogin()
-}
-
-const switchToLogin = () => {
-  isLoginView.value = true
-  registerUsername.value = ''
-  registerPassword.value = ''
-  confirmPassword.value = ''
-  registerServiceUnit.value = ''
-  registerName.value = ''
-  registerPhone.value = ''
-  registerEmail.value = ''
-  registerErrorMessage.value = ''
-}
-
-const switchToRegister = () => {
-  isLoginView.value = false
-  username.value = ''
-  password.value = ''
-  errorMessage.value = ''
+const redirectToSSO = () => {
+  authStore.redirectToSSO()
 }
 </script>
 
 <template>
   <div class="page-wrapper">
-    <div v-if="isLoginView" class="login-container">
+    <div class="login-container">
       <h1 class="title">登入</h1>
       <form @submit.prevent="handleLogin">
         <div class="form-group">
@@ -169,7 +65,7 @@ const switchToRegister = () => {
 
         <div class="button-group">
           <button type="submit" class="login-button">登入 Sign In</button>
-          <button type="button" class="register-button" @click="switchToRegister">
+          <button type="button" class="register-button" @click="redirectToSSO">
             註冊 Register
           </button>
         </div>
@@ -177,92 +73,10 @@ const switchToRegister = () => {
         <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
       </form>
     </div>
-
-    <div v-else class="register-container">
-      <h1 class="title">註冊</h1>
-      <form @submit.prevent="handleRegister" class="register-form">
-        <div class="form-group">
-          <label class="label" for="register-name">姓名：</label>
-          <input
-            type="text"
-            id="register-name"
-            v-model="registerName"
-            placeholder="請輸入真實姓名"
-          />
-        </div>
-        <div class="form-group">
-          <label class="label" for="register-service-unit">服務單位：</label>
-          <input
-            type="text"
-            id="register-service-unit"
-            v-model="registerServiceUnit"
-            placeholder="請輸入您的服務單位/公司/機關"
-          />
-        </div>
-        <div class="form-group">
-          <label class="label" for="register-username">帳號：</label>
-          <input
-            type="text"
-            id="register-username"
-            v-model="registerUsername"
-            placeholder="請輸入帳號"
-          />
-        </div>
-        <div class="form-group">
-          <label class="label" for="register-password">密碼：</label>
-          <input
-            type="password"
-            id="register-password"
-            v-model="registerPassword"
-            placeholder="請輸入密碼"
-          />
-        </div>
-        <div class="form-group">
-          <label class="label" for="confirm-password">確認密碼：</label>
-          <input
-            type="password"
-            id="confirm-password"
-            v-model="confirmPassword"
-            placeholder="請再次輸入密碼"
-          />
-        </div>
-        <div class="form-group">
-          <label class="label" for="register-phone">手機號碼：</label>
-          <input
-            type="tel"
-            id="register-phone"
-            v-model="registerPhone"
-            placeholder="請輸入電話號碼"
-          />
-        </div>
-        <div class="form-group">
-          <label class="label" for="register-email">Email：</label>
-          <input
-            type="email"
-            id="register-email"
-            v-model="registerEmail"
-            placeholder="example@email.com"
-          />
-        </div>
-
-        <div class="button-group">
-          <button type="submit" class="login-button">註冊 Register</button>
-          <button type="button" class="register-button" @click="switchToLogin">返回登入</button>
-        </div>
-
-        <div class="register-hint">
-          <p class="hint-text">
-            <i class="info-icon">ℹ️</i> 註冊成功後，請使用「訪客」身分登入系統
-          </p>
-        </div>
-        <p v-if="registerErrorMessage" class="error">{{ registerErrorMessage }}</p>
-      </form>
-    </div>
   </div>
 </template>
 
 <style scoped>
-/* 原有的 CSS 保持不變 */
 .page-wrapper {
   min-height: 100vh;
   width: 100%;
@@ -273,8 +87,7 @@ const switchToRegister = () => {
   justify-content: center;
   align-items: flex-start;
 }
-.login-container,
-.register-container {
+.login-container {
   width: 100%;
   max-width: 600px;
   padding: 40px 50px;
@@ -283,9 +96,6 @@ const switchToRegister = () => {
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.08);
   font-family: 'Microsoft JhengHei', sans-serif;
   margin: auto;
-}
-.register-form {
-  width: 100%;
 }
 .title {
   font-size: 32px;
@@ -360,32 +170,11 @@ input:focus {
 input::placeholder {
   color: #b0b0b0;
 }
-.register-hint {
-  margin-top: 20px;
-  text-align: center;
-}
-.hint-text {
-  font-size: 14px;
-  color: #666;
-  background-color: #f8f9fa;
-  padding: 12px 16px;
-  border-radius: 6px;
-  border-left: 4px solid #4a90e2;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.info-icon {
-  font-size: 16px;
-}
 @media (max-width: 768px) {
   .page-wrapper {
     padding: 20px;
   }
-  .login-container,
-  .register-container {
+  .login-container {
     padding: 30px 25px;
   }
 }
