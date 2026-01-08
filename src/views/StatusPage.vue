@@ -38,7 +38,7 @@ const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四
 const today = new Date()
 const todayKey = getDateKey(today)
 
-// --- 选取状态 ---
+// 選取狀態
 const selectionState = ref({
   dateKey: null,
   indices: [],
