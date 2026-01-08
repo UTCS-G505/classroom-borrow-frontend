@@ -1,13 +1,14 @@
 <script setup>
 import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { ref, watch, onUnmounted, onMounted } from 'vue'
-import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
+import { useUserStore } from '@/stores/user'
 import logo from '@/assets/logo.png'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const userStore = useUserStore()
 
 const links = [
   { to: '/home', label: '首頁' },
@@ -19,11 +20,7 @@ const links = [
 
 const isMobileMenuOpen = ref(false)
 const isScrolled = ref(false)
-
-// 狀態變數
-const currentUsername = ref('')
 const isUserMenuOpen = ref(false)
-const isLoadingProfile = ref(false)
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
@@ -45,54 +42,18 @@ const toggleUserMenu = () => {
 // 登出功能
 const handleLogout = () => {
   authStore.clearAuth()
-  currentUsername.value = ''
+  userStore.clearUserProfile()
   isUserMenuOpen.value = false
   isMobileMenuOpen.value = false
   router.push('/login')
 }
 
-// 獲取用戶資料
-const fetchUserProfile = async () => {
-  const uid = authStore.getUid()
-  const token = authStore.getAccessToken()
-
-  if (!uid || !token) {
-    currentUsername.value = ''
-    return
-  }
-
-  if (isLoadingProfile.value) return
-
-  try {
-    isLoadingProfile.value = true
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-
-    const response = await axios.get(`${API_URL}/users/profile`, {
-      params: { uid },
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-
-    if (response.data.success && response.data.data) {
-      currentUsername.value = response.data.data.name || response.data.data.account
-    } else {
-      currentUsername.value = ''
-    }
-  } catch (error) {
-    console.error('Failed to fetch user profile:', error)
-    currentUsername.value = ''
-  } finally {
-    isLoadingProfile.value = false
-  }
-}
-
 // 核心邏輯：檢查登入狀態
 const checkLoginStatus = () => {
   if (authStore.isLoggedIn.value) {
-    fetchUserProfile()
+    userStore.fetchUserProfile()
   } else {
-    currentUsername.value = ''
+    userStore.clearUserProfile()
   }
 }
 
@@ -110,10 +71,10 @@ watch(
   (newValue) => {
     if (newValue) {
       // User just logged in, fetch profile
-      fetchUserProfile()
+      userStore.fetchUserProfile()
     } else {
       // User logged out, clear username
-      currentUsername.value = ''
+      userStore.clearUserProfile()
     }
   },
 )
@@ -200,7 +161,7 @@ onMounted(() => {
 
         <div v-else class="user-menu-container">
           <button class="nav-link user-btn" @click.stop="toggleUserMenu">
-            <span class="username-text">{{ currentUsername || '載入中...' }}</span>
+            <span class="username-text">{{ userStore.username || '載入中...' }}</span>
             <span class="arrow" :class="{ rotate: isUserMenuOpen }">▼</span>
           </button>
 
