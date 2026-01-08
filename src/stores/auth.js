@@ -31,14 +31,24 @@ export function useAuthStore() {
     return uid.value
   }
 
-  const initializeAuth = () => {
-    // Try to restore uid from localStorage on app start
-    const storedUid = localStorage.getItem('uid')
-    if (storedUid) {
-      uid.value = storedUid
-      // Note: accessToken is not persisted for security reasons
-      // User will need to re-login if page is refreshed
+  const initializeAuth = async () => {
+    if (!accessToken.value) {
+      // Try to load uid from localStorage
+      const storedUid = localStorage.getItem('uid')
+      if (storedUid) {
+        uid.value = storedUid
+      }
+      try {
+        const refreshResult = await refresh()
+        console.log('Token refresh result during initialization:', refreshResult)
+        if (!refreshResult.success) {
+          clearAuth()
+        }
+      } catch {
+        clearAuth()
+      }
     }
+    console.log('initializeAuth completed. isLoggedIn:', isLoggedIn.value)
   }
 
   const login = async (account, password) => {
@@ -62,7 +72,6 @@ export function useAuthStore() {
         // Store auth data in memory
         setAuth(token, userUid)
 
-        // console.log('SSO 登入成功:', response.data)
         return { success: true, data: userData }
       } else {
         return {
@@ -85,6 +94,29 @@ export function useAuthStore() {
     }
   }
 
+  const refresh = async () => {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
+    try {
+      const response = await axios.post(API_URL + '/api/refresh', {}, { withCredentials: true })
+      console.log(response)
+
+      if (response.data.success) {
+        const newToken = response.data.data.accessToken
+        accessToken.value = newToken
+        console.log('Token refreshed successfully')
+        return { success: true }
+      } else {
+        clearAuth()
+        return { success: false, message: 'Token 刷新失敗' }
+      }
+    } catch (error) {
+      console.error('Token refresh error:', error)
+      clearAuth()
+      return { success: false, message: '發生未預期的錯誤' }
+    }
+  }
+
   const redirectToSSO = () => {
     const SSO_URL = import.meta.env.VITE_SSO_URL || 'http://localhost:8080'
     window.location.href = SSO_URL
@@ -100,6 +132,7 @@ export function useAuthStore() {
     getUid,
     initializeAuth,
     login,
+    refresh,
     redirectToSSO,
   }
 }
