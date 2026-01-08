@@ -1,9 +1,13 @@
 <script setup>
-import { reactive, onMounted, ref } from 'vue'
+import { reactive, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router' // 引入 useRoute
+import { useUserStore } from '@/stores/user'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute() // 獲取當前路由->讀取資料
 const router = useRouter() // 獲取路由實例->導航跳轉
+const userStore = useUserStore()
+const authStore = useAuthStore()
 
 // 當前階段 (1, 2, 3)
 const currentStage = ref(1)
@@ -320,7 +324,42 @@ onMounted(() => {
   if (roomId) {
     form.classroom = roomId // 將 roomId 設置到 form.classroom
   }
+
+  // 如果用戶已登入，自動填充借用人資訊
+  if (authStore.isLoggedIn.value && userStore.profile) {
+    autoFillBorrowerInfo()
+  }
 })
+
+// 監聽用戶登入狀態和 profile 變化，自動填充借用人資訊
+watch(
+  () => [authStore.isLoggedIn.value, userStore.profile],
+  () => {
+    if (authStore.isLoggedIn.value && userStore.profile) {
+      autoFillBorrowerInfo()
+    }
+  },
+  { deep: true },
+)
+
+// 自動填充借用人資訊的函數
+const autoFillBorrowerInfo = () => {
+  if (userStore.profile) {
+    if (!form.borrowerName) {
+      form.borrowerName = userStore.username || ''
+    }
+    if (!form.borrowerEmail) {
+      form.borrowerEmail = userStore.primary_email || ''
+    }
+    if (!form.borrowerPhone) {
+      form.borrowerPhone = userStore.phone_number || ''
+    }
+    if (!form.borrowerDepartment) {
+      form.borrowerDepartment =
+        userStore.role && 0 <= userStore.role && userStore.role <= 4 ? '資科系' : ''
+    }
+  }
+}
 </script>
 
 <template>

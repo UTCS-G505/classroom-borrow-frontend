@@ -2,13 +2,18 @@ import { ref, computed } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from './auth'
 
-const currentUsername = ref('')
+const userProfile = ref(null)
 const isLoadingProfile = ref(false)
 
 export function useUserStore() {
   const authStore = useAuthStore()
 
-  const username = computed(() => currentUsername.value)
+  const username = computed(() => userProfile.value?.name || userProfile.value?.account || '')
+  const primary_email = computed(() => userProfile.value?.primary_email || '')
+  const phone_number = computed(() => userProfile.value?.phone_number || '')
+  const role = computed(() => userProfile.value?.role || '')
+  const position = computed(() => userProfile.value?.position || '')
+  const profile = computed(() => userProfile.value)
   const isLoading = computed(() => isLoadingProfile.value)
 
   // 獲取用戶資料
@@ -17,7 +22,7 @@ export function useUserStore() {
     const token = authStore.getAccessToken()
 
     if (!uid || !token) {
-      currentUsername.value = ''
+      userProfile.value = null
       return
     }
 
@@ -35,24 +40,29 @@ export function useUserStore() {
       })
 
       if (response.data.success && response.data.data) {
-        currentUsername.value = response.data.data.name || response.data.data.account
+        userProfile.value = response.data.data
       } else {
-        currentUsername.value = ''
+        userProfile.value = null
       }
     } catch (error) {
       console.error('Failed to fetch user profile:', error)
-      currentUsername.value = ''
+      userProfile.value = null
     } finally {
       isLoadingProfile.value = false
     }
   }
 
   const clearUserProfile = () => {
-    currentUsername.value = ''
+    userProfile.value = null
   }
 
   return {
     username,
+    primary_email,
+    phone_number,
+    role,
+    profile,
+    position,
     isLoading,
     fetchUserProfile,
     clearUserProfile,
