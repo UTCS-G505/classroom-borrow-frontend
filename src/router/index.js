@@ -5,6 +5,7 @@ import introductionPage from '../views/introductionPage.vue'
 import HomePage from '../views/HomePage.vue'
 import recordsView from '../views/recordsView.vue'
 import LoginView from '../views/LoginView.vue'
+import StatusPage from '../views/StatusPage.vue'
 
 const routes = [
   {
@@ -36,6 +37,11 @@ const routes = [
     path: '/login', // 你的網址
     name: 'LoginView',
     component: LoginView,
+  },
+  {
+    path: '/borrow_status', // 教室使用情況
+    name: 'StatusPage',
+    component: StatusPage,
   },
 ]
 

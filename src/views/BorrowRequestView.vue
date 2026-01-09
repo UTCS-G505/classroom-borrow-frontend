@@ -319,10 +319,33 @@ const submitForm = () => {
 }
 
 // 在組件掛載時設置教室名稱
+// 在組件掛載時設置教室名稱與預填資料
 onMounted(() => {
-  const roomId = route.query.roomId // 獲取 query 中的 roomId
-  if (roomId) {
-    form.classroom = roomId // 將 roomId 設置到 form.classroom
+  const query = route.query
+
+  // 1. 帶入教室 ID
+  if (query.roomId) {
+    form.classroom = query.roomId
+  }
+
+  // 2. 帶入借用類型 (必須先設定，因為這會影響欄位顯示邏輯)
+  if (query.borrowType) {
+    form.borrowType = query.borrowType
+  }
+
+  // 3. 帶入日期
+  if (query.date) {
+    form.date = query.date
+  }
+
+  // 4. 帶入開始與結束時間
+  // 注意：這裡的值必須完全對應 <option value="..."> 的內容
+  if (query.startTime) {
+    form.startTime = query.startTime
+  }
+
+  if (query.endTime) {
+    form.endTime = query.endTime
   }
 
   // 如果用戶已登入，自動填充借用人資訊
