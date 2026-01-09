@@ -1,12 +1,14 @@
 import { ref, computed } from 'vue'
 import axios from 'axios'
+import { getJwtExp } from '../utils/getJWTExp.js'
 
 // In-memory storage for access token
 const accessToken = ref(null)
 const uid = ref(null)
+const refreshTimerId = ref(null)
 
 export function useAuthStore() {
-  const isLoggedIn = computed(() => !!accessToken.value)
+  const isLoggedIn = computed(() => !!accessToken.value && !!uid.value)
 
   const setAuth = (token, userId) => {
     accessToken.value = token
@@ -39,8 +41,8 @@ export function useAuthStore() {
         uid.value = storedUid
       }
       try {
+        console.log('Initializing auth by refreshing token...')
         const refreshResult = await refresh()
-        console.log('Token refresh result during initialization:', refreshResult)
         if (!refreshResult.success) {
           clearAuth()
         }
@@ -48,7 +50,37 @@ export function useAuthStore() {
         clearAuth()
       }
     }
-    console.log('initializeAuth completed. isLoggedIn:', isLoggedIn.value)
+  }
+
+  const scheduleTokenRefresh = () => {
+    // Clear any previous timer
+    if (refreshTimerId.value) {
+      clearTimeout(refreshTimerId.value)
+      refreshTimerId.value = null
+    }
+
+    if (!accessToken.value) return
+
+    const BUFFER_MS = 60 * 1000 // 1 minute
+    const DEFAULT_DELAY_MS = 9 * 60 * 1000 // 9 minutes if no exp available
+
+    const exp = getJwtExp(accessToken.value)
+    let delay = DEFAULT_DELAY_MS
+    if (exp) {
+      const msUntilExp = exp * 1000 - Date.now()
+      delay = Math.max(0, msUntilExp - BUFFER_MS)
+    }
+
+    // If already expired or very close, refresh immediately
+    if (delay === 0) {
+      // Small microtask delay to avoid recursive call issues
+      refresh().catch(() => {})
+      return
+    }
+
+    refreshTimerId.value = window.setTimeout(() => {
+      refresh().catch(() => {})
+    }, delay)
   }
 
   const login = async (account, password) => {
@@ -71,6 +103,7 @@ export function useAuthStore() {
 
         // Store auth data in memory
         setAuth(token, userUid)
+        scheduleTokenRefresh()
 
         return { success: true, data: userData }
       } else {
@@ -80,8 +113,6 @@ export function useAuthStore() {
         }
       }
     } catch (error) {
-      console.error('Login error:', error)
-
       let errorMessage = '發生未預期的錯誤'
 
       if (error.code === 'ERR_NETWORK') {
@@ -99,11 +130,20 @@ export function useAuthStore() {
 
     try {
       const response = await axios.post(API_URL + '/api/refresh', {}, { withCredentials: true })
-      console.log(response)
 
       if (response.data.success) {
         const newToken = response.data.data.accessToken
         accessToken.value = newToken
+
+        // Restore uid from localStorage if not already set
+        if (!uid.value) {
+          const storedUid = localStorage.getItem('uid')
+          if (storedUid) {
+            uid.value = storedUid
+          }
+        }
+
+        scheduleTokenRefresh()
         console.log('Token refreshed successfully')
         return { success: true }
       } else {
@@ -131,6 +171,7 @@ export function useAuthStore() {
     getAccessToken,
     getUid,
     initializeAuth,
+    scheduleTokenRefresh,
     login,
     refresh,
     redirectToSSO,

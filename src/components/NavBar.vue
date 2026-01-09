@@ -49,9 +49,9 @@ const handleLogout = () => {
 }
 
 // 核心邏輯：檢查登入狀態
-const checkLoginStatus = () => {
+const checkLoginStatus = async () => {
   if (authStore.isLoggedIn.value) {
-    userStore.fetchUserProfile()
+    await userStore.fetchUserProfile()
   } else {
     userStore.clearUserProfile()
   }
@@ -68,10 +68,10 @@ watch(
 // Watch for changes in login status
 watch(
   () => authStore.isLoggedIn.value,
-  (newValue) => {
+  async (newValue) => {
     if (newValue) {
       // User just logged in, fetch profile
-      userStore.fetchUserProfile()
+      await userStore.fetchUserProfile()
     } else {
       // User logged out, clear username
       userStore.clearUserProfile()

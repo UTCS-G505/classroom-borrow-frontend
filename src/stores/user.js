@@ -44,8 +44,7 @@ export function useUserStore() {
       } else {
         userProfile.value = null
       }
-    } catch (error) {
-      console.error('Failed to fetch user profile:', error)
+    } catch {
       userProfile.value = null
     } finally {
       isLoadingProfile.value = false
