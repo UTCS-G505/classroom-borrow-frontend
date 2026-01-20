@@ -1,60 +1,101 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import axios from 'axios'
 
+// Constants
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
+// Route & State
 const route = useRoute()
 const bookingId = route.query.id
+
 const requestData = ref(null)
 const isLoading = ref(true)
+const isSubmitting = ref(false)
 const comment = ref('')
 
-// 1. 載入資料
-onMounted(async () => {
-  if (!bookingId) return
+// Computed status properties
+const isTeacherApproved = computed(() => requestData.value?.status === '教師核准')
+const isApproved = computed(() => requestData.value?.status === '核准')
+const isRejected = computed(() => requestData.value?.status === '退件')
+const isPending = computed(() => requestData.value?.status === '審核中')
+
+const formattedBorrowTime = computed(() => {
+  if (!requestData.value) return ''
+  const { start_date, end_date, start_time, end_time } = requestData.value
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return ''
+    return dateStr.split('T')[0]
+  }
+
+  const sDate = formatDate(start_date)
+  const eDate = formatDate(end_date)
+  // Ensure time is in HH:mm format
+  const sTime = start_time?.substring(0, 5)
+  const eTime = end_time?.substring(0, 5)
+
+  if (sDate === eDate) {
+    return `${sDate} <br /> ${sTime} - ${eTime}`
+  } else {
+    return `${sDate} ${sTime} <br /> - <br /> ${eDate} ${eTime}`
+  }
+})
+
+// API Functions
+async function fetchBookingData() {
+  if (!bookingId) {
+    isLoading.value = false
+    return
+  }
+
   try {
-    const baseUrl = import.meta.env.VITE_API_URL || ''
-    const res = await fetch(`${baseUrl}/api/borrow/${bookingId}`)
-    const json = await res.json()
-    if (json.success) {
-      requestData.value = json.data
+    const data = await axios.get(`${BASE_URL}/bookings/${bookingId}`)
+
+    if (data.status === 200) {
+      requestData.value = data.data[0]
+      console.log('requestData.value', requestData.value)
     } else {
       alert('找不到資料')
     }
-  } catch (e) {
-    console.error(e)
+  } catch (error) {
+    console.error('Failed to fetch booking data:', error)
     alert('連線錯誤')
   } finally {
     isLoading.value = false
   }
-})
+}
 
-// 2. 助教簽核動作
-const handleSignOff = async (status) => {
-  const actionText = status === 'APPROVED' ? '最終核准' : '退回申請'
+async function handleSignOff(status) {
+  const actionText = status === '核准' ? '最終核准' : '退回申請'
   if (!confirm(`確定要 ${actionText} 嗎？`)) return
 
+  isSubmitting.value = true
+
   try {
-    const res = await fetch('/api/ta-signoff', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: bookingId,
-        status: status,
-        comment: comment.value,
-      }),
+    const data = await axios.post(`${BASE_URL}/bookings/ta-signoff`, {
+      id: bookingId,
+      status: status,
+      comment: comment.value,
     })
-    const json = await res.json()
-    if (json.success) {
-      alert(json.message)
+
+    if (data.status === 200) {
+      alert(data.data.message)
       window.location.reload()
     } else {
-      alert('失敗: ' + json.error)
+      alert('失敗: ' + data.data.error)
     }
-  } catch (e) {
-    console.error(e)
+  } catch (error) {
+    console.error('Sign-off failed:', error)
     alert('系統錯誤')
+  } finally {
+    isSubmitting.value = false
   }
 }
+
+// Lifecycle
+onMounted(fetchBookingData)
 </script>
 
 <template>
@@ -67,72 +108,70 @@ const handleSignOff = async (status) => {
       <div class="row">
         <div class="col">
           <label>活動名稱</label>
-          <div class="value">{{ requestData.activity_name }}</div>
+          <div class="value">{{ requestData.event_name }}</div>
         </div>
         <div class="col">
           <label>申請人 (Email)</label>
-          <div class="value">
-            {{ requestData.applicant_name || '未填寫' }}
-            <span class="sub-text">({{ requestData.user_email }})</span>
-          </div>
+          <div class="value">{{ requestData.borrower_email }}</div>
         </div>
       </div>
 
       <div class="row">
         <div class="col">
           <label>借用教室</label>
-          <div class="value">{{ requestData.classroom }}</div>
+          <div class="value">{{ requestData.classroom_id }}</div>
         </div>
         <div class="col">
           <label>借用時間</label>
-          <div class="value">
-            {{ requestData.borrow_date }} <br />
-            {{ requestData.start_time }} - {{ requestData.end_time }}
-          </div>
+          <div class="value" v-html="formattedBorrowTime"></div>
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-small">
-          <label>參與人數</label>
-          <div class="value">{{ requestData.participant_count || 0 }} 人</div>
-        </div>
-        <div class="col-large">
-          <label>活動說明</label>
-          <div class="value description-box">
-            {{ requestData.description || '無詳細說明' }}
-          </div>
-        </div>
-      </div>
-
-      <div v-if="requestData.status === 'TEACHER_APPROVED'">
+      <!-- Teacher Approved: Show TA sign-off form -->
+      <div v-if="isTeacherApproved" class="signoff-form">
         <div class="info-box">
           <p>✅ 指導老師已核准，請助教進行最終確認。</p>
         </div>
 
         <div class="input-group">
           <label>助教備註 / 退回理由：</label>
-          <textarea v-model="comment" placeholder="請輸入備註..."></textarea>
+          <textarea
+            v-model="comment"
+            placeholder="請輸入備註..."
+            :disabled="isSubmitting"
+          ></textarea>
         </div>
 
         <div class="btn-group">
-          <button class="btn-approve" @click="handleSignOff('APPROVED')">最終核准</button>
-          <button class="btn-reject" @click="handleSignOff('REJECTED')">退回</button>
+          <button class="btn-approve" :disabled="isSubmitting" @click="handleSignOff('核准')">
+            {{ isSubmitting ? '處理中...' : '最終核准' }}
+          </button>
+          <button class="btn-reject" :disabled="isSubmitting" @click="handleSignOff('退件')">
+            {{ isSubmitting ? '處理中...' : '退回' }}
+          </button>
         </div>
       </div>
 
-      <div v-else-if="requestData.status === 'APPROVED'" class="status-msg success">
+      <!-- Approved status -->
+      <div v-else-if="isApproved" class="status-msg success">
         <h2>此申請單已核准</h2>
         <p>流程已結案</p>
       </div>
 
-      <div v-else-if="requestData.status === 'REJECTED'" class="status-msg error">
+      <!-- Rejected status -->
+      <div v-else-if="isRejected" class="status-msg error">
         <h2>此申請單已退回</h2>
       </div>
 
-      <div v-else-if="requestData.status === 'PENDING'" class="status-msg pending">
+      <!-- Pending status -->
+      <div v-else-if="isPending" class="status-msg pending">
         <h2>等待指導老師簽核中</h2>
         <p>尚未輪到助教簽核</p>
+      </div>
+
+      <!-- Other status -->
+      <div v-else class="status-msg">
+        <h2>狀態：{{ requestData.status }}</h2>
       </div>
     </div>
     <div v-else>找不到此申請單資料</div>
@@ -154,7 +193,6 @@ const handleSignOff = async (status) => {
   margin-bottom: 30px;
   color: #333;
 }
-
 .row {
   display: flex;
   gap: 20px;
@@ -165,13 +203,6 @@ const handleSignOff = async (status) => {
   flex: 1;
   min-width: 200px;
 }
-.col-small {
-  flex: 0 0 150px;
-}
-.col-large {
-  flex: 2;
-}
-
 label {
   display: block;
   font-weight: bold;
@@ -185,16 +216,6 @@ label {
   border: 1px solid #eee;
   color: #333;
 }
-.sub-text {
-  font-size: 0.9em;
-  color: #888;
-  margin-left: 5px;
-}
-.description-box {
-  min-height: 60px;
-  white-space: pre-wrap;
-}
-
 .info-box {
   background-color: #e3f2fd;
   color: #0d47a1;
@@ -203,19 +224,17 @@ label {
   margin-bottom: 15px;
   text-align: center;
 }
-
 .input-group {
   margin-top: 20px;
 }
 textarea {
   width: 100%;
-  height: 80px;
+  height: 100px;
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
   resize: vertical;
 }
-
 .btn-group {
   margin-top: 30px;
   display: flex;
@@ -223,7 +242,7 @@ textarea {
   justify-content: center;
 }
 button {
-  padding: 12px 30px;
+  padding: 12px 40px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -235,15 +254,12 @@ button {
 button:hover {
   opacity: 0.9;
 }
-
 .btn-approve {
   background-color: #28a745;
 }
 .btn-reject {
   background-color: #dc3545;
 }
-
-/* 狀態樣式 */
 .status-msg {
   margin-top: 40px;
   text-align: center;

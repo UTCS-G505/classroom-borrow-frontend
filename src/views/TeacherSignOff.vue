@@ -17,9 +17,7 @@ const comment = ref('')
 
 // Computed status properties
 const isPending = computed(() => requestData.value?.status === '審核中')
-const isApproved = computed(() =>
-  ['TEACHER_APPROVED', 'APPROVED'].includes(requestData.value?.status),
-)
+const isApproved = computed(() => ['教師核准', '核准'].includes(requestData.value?.status))
 const isRejected = computed(() => requestData.value?.status === '退件')
 
 const formattedBorrowTime = computed(() => {
@@ -52,13 +50,10 @@ async function fetchBookingData() {
   }
 
   try {
-    // console.log('bookingId', bookingId)
     const data = await axios.get(`${BASE_URL}/bookings/${bookingId}`)
-    // console.log('data', data)
 
     if (data.status === 200) {
       requestData.value = data.data[0]
-      console.log('requestData.value', requestData.value)
     } else {
       alert('找不到資料')
     }
