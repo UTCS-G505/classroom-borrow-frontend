@@ -3,6 +3,7 @@ import { reactive, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router' // 引入 useRoute
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
+import axios from 'axios'
 
 const route = useRoute() // 獲取當前路由->讀取資料
 const router = useRouter() // 獲取路由實例->導航跳轉
@@ -242,7 +243,7 @@ const prevStage = () => {
   }
 }
 
-const submitForm = () => {
+const submitForm = async () => {
   if (!validateStage3()) {
     alert('請修正表單中的錯誤！')
     return
@@ -254,6 +255,57 @@ const submitForm = () => {
 
   console.log('送出資料：', result)
   alert('表單已送出！')
+
+  // 將時段格式 "1210-1300" 轉換為 SQL TIME 格式 "12:10:00"
+  const formatTimeToSQL = (timeRange, isEndTime = false) => {
+    if (!timeRange) return null
+    const parts = timeRange.split('-')
+    const time = isEndTime ? parts[1] : parts[0]
+    if (time && time.length === 4) {
+      return `${time.slice(0, 2)}:${time.slice(2, 4)}:00`
+    }
+    return null
+  }
+
+  const payload = {
+    borrower_id: authStore.user.value.user_id || null,
+    classroom_id: form.classroom,
+    borrow_type: form.borrowType,
+    start_date: form.borrowType === '單次借用' ? form.date : form.multiStartDate,
+    end_date: form.borrowType === '單次借用' ? form.date : form.multiEndDate,
+    start_time: formatTimeToSQL(form.startTime, false),
+    end_time: formatTimeToSQL(form.endTime, true),
+    event_name: form.eventName,
+    people_count: form.peopleCount,
+    teacher_name: form.teacherName,
+    reason: form.description,
+    teacher_department: form.teacherDepartment,
+    teacher_phone: form.teacherPhone,
+    teacher_email: form.teacherEmail,
+    borrower_department: form.borrowerDepartment,
+    borrower_phone: form.borrowerPhone,
+    borrower_email: form.borrowerEmail,
+  }
+
+  console.log('payload:', payload)
+
+  try {
+    const response = await axios.post(`http://localhost:3000/bookings`, payload, {
+      headers: {
+        Authorization: `Bearer ${authStore.accessToken.value}`,
+      },
+    })
+    if (response.status === 200) {
+      alert('借用申請已成功送出！')
+    } else {
+      alert('借用申請送出失敗，請稍後再試。')
+      return
+    }
+  } catch (error) {
+    console.error('送出借用申請時發生錯誤：', error)
+    alert('送出借用申請時發生錯誤，請稍後再試。')
+    return
+  }
 
   // 清空表單資料
   Object.keys(form).forEach((key) => {

@@ -5,6 +5,7 @@ import { getJwtExp } from '../utils/getJWTExp.js'
 // In-memory storage for access token
 const accessToken = ref(null)
 const uid = ref(null)
+const user = ref(null)
 const refreshTimerId = ref(null)
 
 export function useAuthStore() {
@@ -17,6 +18,10 @@ export function useAuthStore() {
     if (userId) {
       localStorage.setItem('uid', userId)
     }
+  }
+
+  const setUser = (newUser) => {
+    user.value = newUser
   }
 
   const clearAuth = () => {
@@ -100,9 +105,11 @@ export function useAuthStore() {
         const userData = response.data.data
         const userUid = userData.uid
         const token = userData.accessToken
+        const newUser = userData.user
 
         // Store auth data in memory
         setAuth(token, userUid)
+        setUser(newUser)
         scheduleTokenRefresh()
 
         return { success: true, data: userData }
@@ -165,6 +172,7 @@ export function useAuthStore() {
   return {
     accessToken: computed(() => accessToken.value),
     uid: computed(() => uid.value),
+    user: computed(() => user.value),
     isLoggedIn,
     setAuth,
     clearAuth,
