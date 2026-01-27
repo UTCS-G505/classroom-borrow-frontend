@@ -6,6 +6,8 @@ import HomePage from '../views/HomePage.vue'
 import recordsView from '../views/recordsView.vue'
 import LoginView from '../views/LoginView.vue'
 import StatusPage from '../views/StatusPage.vue'
+import TeacherSignoffView from '../views/TeacherSignoffView.vue'
+import TASignoffView from '../views/TASignoffView.vue'
 
 const routes = [
   {
@@ -42,6 +44,16 @@ const routes = [
     path: '/borrow_status', // 教室使用情況
     name: 'StatusPage',
     component: StatusPage,
+  },
+  {
+    path: '/teacher-signoff',
+    name: 'TeacherSignoff',
+    component: TeacherSignoffView,
+  },
+  {
+    path: '/ta-signoff',
+    name: 'TASignoff',
+    component: TASignoffView,
   },
 ]
 
