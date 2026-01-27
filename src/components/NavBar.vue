@@ -1,7 +1,14 @@
 <script setup>
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { ref, watch, onUnmounted, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import { useUserStore } from '@/stores/user'
 import logo from '@/assets/logo.png'
+
+const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
+const userStore = useUserStore()
 
 const links = [
   { to: '/home', label: '首頁' },
@@ -9,11 +16,11 @@ const links = [
   { to: '/introduction', label: '教室介紹' },
   { to: '/borrow', label: '申請借用' },
   { to: '/record', label: '借用紀錄' },
-  { to: '/login', label: '登入' },
 ]
 
 const isMobileMenuOpen = ref(false)
 const isScrolled = ref(false)
+const isUserMenuOpen = ref(false)
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
@@ -21,13 +28,57 @@ const toggleMobileMenu = () => {
 
 const closeMobileMenu = () => {
   isMobileMenuOpen.value = false
+  isUserMenuOpen.value = false
 }
 
 const handleScroll = () => {
   isScrolled.value = window.scrollY > 10
 }
 
-// Lock body scroll while mobile menu open
+const toggleUserMenu = () => {
+  isUserMenuOpen.value = !isUserMenuOpen.value
+}
+
+// 登出功能
+const handleLogout = () => {
+  authStore.clearAuth()
+  userStore.clearUserProfile()
+  isUserMenuOpen.value = false
+  isMobileMenuOpen.value = false
+  router.push('/login')
+}
+
+// 核心邏輯：檢查登入狀態
+const checkLoginStatus = async () => {
+  if (authStore.isLoggedIn.value) {
+    await userStore.fetchUserProfile()
+  } else {
+    userStore.clearUserProfile()
+  }
+}
+
+watch(
+  () => route.path,
+  () => {
+    checkLoginStatus()
+    closeMobileMenu()
+  },
+)
+
+// Watch for changes in login status
+watch(
+  () => authStore.isLoggedIn.value,
+  async (newValue) => {
+    if (newValue) {
+      // User just logged in, fetch profile
+      await userStore.fetchUserProfile()
+    } else {
+      // User logged out, clear username
+      userStore.clearUserProfile()
+    }
+  },
+)
+
 watch(isMobileMenuOpen, (val) => {
   if (typeof document !== 'undefined') {
     document.body.style.overflow = val ? 'hidden' : ''
@@ -35,17 +86,27 @@ watch(isMobileMenuOpen, (val) => {
 })
 
 onMounted(() => {
-  // Close on Escape key
-  const escapeHandler = (e) => {
-    if (e.key === 'Escape') closeMobileMenu()
-  }
-  window.addEventListener('keydown', escapeHandler)
+  checkLoginStatus()
 
-  // Handle scroll for transparent background
+  const escapeHandler = (e) => {
+    if (e.key === 'Escape') {
+      closeMobileMenu()
+      isUserMenuOpen.value = false
+    }
+  }
+  const clickOutsideHandler = (e) => {
+    if (isUserMenuOpen.value && !e.target.closest('.user-menu-container')) {
+      isUserMenuOpen.value = false
+    }
+  }
+
+  window.addEventListener('keydown', escapeHandler)
+  window.addEventListener('click', clickOutsideHandler)
   window.addEventListener('scroll', handleScroll)
 
   onUnmounted(() => {
     window.removeEventListener('keydown', escapeHandler)
+    window.removeEventListener('click', clickOutsideHandler)
     window.removeEventListener('scroll', handleScroll)
     if (typeof document !== 'undefined') {
       document.body.style.overflow = ''
@@ -63,18 +124,15 @@ onMounted(() => {
       </RouterLink>
     </div>
 
-    <!-- Mobile menu button -->
     <button class="mobile-menu-btn" @click="toggleMobileMenu" aria-label="Toggle menu">
       <span class="hamburger-line" :class="{ active: isMobileMenuOpen }"></span>
       <span class="hamburger-line" :class="{ active: isMobileMenuOpen }"></span>
       <span class="hamburger-line" :class="{ active: isMobileMenuOpen }"></span>
     </button>
 
-    <!-- Navigation links -->
     <ul
       class="nav-links"
       :class="{ 'mobile-open': isMobileMenuOpen }"
-      @click.self="closeMobileMenu"
       aria-hidden="false"
       role="menu"
     >
@@ -89,11 +147,53 @@ onMounted(() => {
           {{ l.label }}
         </RouterLink>
       </li>
+
+      <li class="auth-item">
+        <RouterLink
+          v-if="!authStore.isLoggedIn.value"
+          to="/login"
+          class="nav-link"
+          active-class="active"
+          @click="closeMobileMenu"
+        >
+          登入
+        </RouterLink>
+
+        <div v-else class="user-menu-container">
+          <button class="nav-link user-btn" @click.stop="toggleUserMenu">
+            <span class="username-text">{{ userStore.username || '載入中...' }}</span>
+            <span class="arrow" :class="{ rotate: isUserMenuOpen }">▼</span>
+          </button>
+
+          <div v-if="isUserMenuOpen" class="dropdown-menu">
+            <button @click="handleLogout" class="dropdown-item logout-btn">
+              <span>登出</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="logout-icon-svg"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </li>
     </ul>
   </nav>
 </template>
 
 <style scoped>
+/* 基礎樣式 */
 .navbar {
   --nav-bg: rgba(255, 255, 255, 0.95);
   display: flex;
@@ -101,8 +201,6 @@ onMounted(() => {
   justify-content: space-between;
   padding: 0 1.25rem;
   min-height: 65px;
-  /* Background moved to ::before to avoid creating a containing block for
-     descendants with position: fixed when using filter/backdrop-filter */
   background: transparent;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   margin: 0;
@@ -111,11 +209,8 @@ onMounted(() => {
   left: 0;
   right: 0;
   z-index: 1000;
-
-  /* transition remains for variable-based background via ::before */
   transition: background-color 0.3s ease;
 }
-
 .navbar::before {
   content: '';
   position: absolute;
@@ -123,16 +218,14 @@ onMounted(() => {
   background: var(--nav-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  z-index: -1; /* behind navbar content but within its stacking context */
+  z-index: -1;
   transition:
     background-color 0.3s ease,
     backdrop-filter 0.3s ease;
 }
-
 .navbar.scrolled {
   --nav-bg: rgba(255, 255, 255, 0.5);
 }
-
 .nav-brand .brand-link {
   font-weight: 600;
   font-size: 1.25rem;
@@ -143,25 +236,19 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
 }
-
 .logo {
   height: 40px;
   width: auto;
   object-fit: contain;
 }
-
-.brand-text {
-  white-space: nowrap;
-}
-
 .nav-links {
   list-style: none;
   display: flex;
   gap: 0.75rem;
   margin: 0;
   padding: 0;
+  align-items: center;
 }
-
 .nav-link {
   text-decoration: none;
   padding: 0.35rem 0.65rem;
@@ -173,13 +260,86 @@ onMounted(() => {
     background-color 0.15s,
     color 0.15s,
     transform 0.15s ease;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  font-family: inherit;
 }
-
-.nav-link:hover {
+.nav-link:hover,
+.nav-link.active {
   background: rgba(0, 0, 0, 0.08);
 }
 
-/* Mobile menu button */
+/* 原本的 .login-btn 樣式已移除，現在「登入」會跟其他連結一樣顏色 */
+
+.user-menu-container {
+  position: relative;
+}
+.user-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f3f4f6;
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  color: #333;
+  font-weight: 600;
+  font-size: 1rem;
+}
+.user-btn:hover {
+  background-color: #e5e7eb;
+}
+.arrow {
+  font-size: 0.8rem;
+  color: #666;
+  transition: transform 0.3s ease;
+}
+.arrow.rotate {
+  transform: rotate(180deg);
+}
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 100px;
+  padding: 5px 0;
+  overflow: hidden;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 15px;
+  background: transparent;
+  border: none;
+  color: #dc3545;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+.dropdown-item:hover {
+  background-color: #fff5f5;
+}
+.logout-icon-svg {
+  opacity: 0.7;
+}
 .mobile-menu-btn {
   display: none;
   flex-direction: column;
@@ -193,7 +353,6 @@ onMounted(() => {
   z-index: 1200;
   position: relative;
 }
-
 .hamburger-line {
   width: 2rem;
   height: 0.25rem;
@@ -203,150 +362,84 @@ onMounted(() => {
   position: relative;
   transform-origin: 1px;
 }
-
 .hamburger-line.active:nth-child(1) {
   transform: rotate(45deg);
 }
-
 .hamburger-line.active:nth-child(2) {
   opacity: 0;
   transform: translateX(20px);
 }
-
 .hamburger-line.active:nth-child(3) {
   transform: rotate(-45deg);
 }
-
-/* Mobile styles */
 @media (max-width: 768px) {
   .mobile-menu-btn {
     display: flex;
   }
-
   .logo {
     height: 32px;
   }
-
   .brand-text {
     font-size: 1rem;
   }
-
-  /* Full-screen overlay menu */
   .nav-links {
     position: fixed;
-    inset: 0; /* top:0 right:0 bottom:0 left:0 */
+    inset: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
-    margin: 0;
-    background: rgba(255, 255, 255, 0.95);
+    gap: 1rem;
+    background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    transform: translateY(-100%); /* hidden above */
+    transform: translateY(-100%);
     opacity: 0;
     pointer-events: none;
     transition:
-      transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 0.35s ease;
-    z-index: 1100; /* over navbar (navbar is 1000) */
+      transform 0.45s,
+      opacity 0.35s;
+    z-index: 1100;
   }
-
-  /* Slide starts visually from bottom edge of navbar (simulate by delaying part of motion) */
   .nav-links.mobile-open {
     transform: translateY(0);
     opacity: 1;
     pointer-events: auto;
   }
-
-  /* Optional subtle stagger */
-  .nav-links.mobile-open li {
-    animation: fadeSlide 0.5s both;
-  }
-  .nav-links.mobile-open li:nth-child(1) {
-    animation-delay: 0.05s;
-  }
-  .nav-links.mobile-open li:nth-child(2) {
-    animation-delay: 0.1s;
-  }
-  .nav-links.mobile-open li:nth-child(3) {
-    animation-delay: 0.15s;
-  }
-  .nav-links.mobile-open li:nth-child(4) {
-    animation-delay: 0.2s;
-  }
-  .nav-links.mobile-open li:nth-child(5) {
-    animation-delay: 0.25s;
-  }
-  .nav-links.mobile-open li:nth-child(6) {
-    animation-delay: 0.3s;
-  }
-
-  @keyframes fadeSlide {
-    0% {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .nav-links li {
-    width: auto; /* allow natural width for better centering */
-    text-align: center;
-    margin: 0.5rem 0;
-  }
-
   .nav-link {
     display: block;
     padding: 1rem 2rem;
     font-size: 1.2rem;
-    border-radius: 8px; /* add border radius for better appearance */
     text-align: center;
-    min-width: 200px; /* ensure consistent button width */
+    width: 100%;
   }
-
-  .nav-link:hover {
-    background: rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px); /* subtle hover animation */
+  .user-menu-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+  .user-btn {
+    font-size: 1.2rem;
+    padding: 1rem 2rem;
+    background: transparent;
+  }
+  .dropdown-menu {
+    position: static;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin-top: 0;
+    animation: none;
   }
 }
-
-/* Tablet styles */
 @media (max-width: 1024px) and (min-width: 769px) {
   .navbar {
     padding: 0 1rem;
   }
-
-  .nav-brand .brand-link {
-    font-size: 1.1rem;
-  }
-
   .logo {
     height: 35px;
-  }
-
-  .nav-links {
-    gap: 0.5rem;
-  }
-
-  .nav-link {
-    padding: 0.3rem 0.5rem;
-    font-size: 1rem;
-  }
-}
-
-/* Small desktop adjustments */
-@media (max-width: 1200px) and (min-width: 1025px) {
-  .nav-links {
-    gap: 0.6rem;
-  }
-
-  .nav-link {
-    font-size: 1.05rem;
   }
 }
 </style>
