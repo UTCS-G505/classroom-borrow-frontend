@@ -108,7 +108,7 @@ const floorPlans = ref([
 function scrollToRoom(id) {
   const target = document.getElementById(id)
   if (target) {
-    target.scrollIntoView({ behavior: 'smooth' })
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 }
 
