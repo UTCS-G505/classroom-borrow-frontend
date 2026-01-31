@@ -84,11 +84,8 @@ const validateField = (field) => {
       (field === 'multiStartDate' || field === 'multiEndDate' || field == 'repeatType')
     ) {
       return true // 單次借用不需要多次借用的日期
-    } else if (
-      form.borrowType == '多次借用' &&
-      (field === 'date' || field === 'startTime' || field === 'endTime')
-    ) {
-      return true // 多次借用不需要單次借用的日期
+    } else if (form.borrowType == '多次借用' && field === 'date') {
+      return true // 多次借用不需要單次借用的日期，但仍需要活動時間
     } else {
       errors[field] = '此欄位必填'
       return false
