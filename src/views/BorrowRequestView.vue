@@ -3,7 +3,6 @@ import { reactive, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router' // 引入 useRoute
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
-import axios from 'axios'
 
 const route = useRoute() // 獲取當前路由->讀取資料
 const router = useRouter() // 獲取路由實例->導航跳轉
