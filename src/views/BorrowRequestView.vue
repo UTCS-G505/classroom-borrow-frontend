@@ -731,7 +731,12 @@ const autoFillBorrowerInfo = () => {
     <div class="navigation-buttons">
       <button v-if="currentStage > 1" @click="prevStage" class="btn-prev">上一步</button>
       <button v-if="currentStage < 3" @click="nextStage" class="btn-next">下一步</button>
-      <button v-if="currentStage === 3" @click="submitForm" class="btn-submit" :disabled="isSubmitting">
+      <button
+        v-if="currentStage === 3"
+        @click="submitForm"
+        class="btn-submit"
+        :disabled="isSubmitting"
+      >
         {{ isSubmitting ? '提交中...' : '送出申請' }}
       </button>
     </div>

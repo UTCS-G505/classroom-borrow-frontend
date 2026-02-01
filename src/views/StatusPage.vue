@@ -117,8 +117,8 @@ async function fetchSchedule(classroomId = selectedRoom.value) {
         if (slotStart >= startHour && slotStart < endHour) {
           // Store object with name and status
           transformedData[roomId][dateKey][slot] = {
-             name: eventName,
-             status: item.status
+            name: eventName,
+            status: item.status,
           }
         }
       })
@@ -369,13 +369,14 @@ function selectRoom(id) {
                     toggleSlot(date, tIdx)
                   "
                 >
-                  <div v-if="schedule[getDateKey(date)]?.[time]" 
-                       class="event"
-                       :class="{
-                         'pending': schedule[getDateKey(date)][time].status === '審核中',
-                         'teacher-approved': schedule[getDateKey(date)][time].status === '教師核准',
-                         'approved': schedule[getDateKey(date)][time].status === '已預約'
-                       }"
+                  <div
+                    v-if="schedule[getDateKey(date)]?.[time]"
+                    class="event"
+                    :class="{
+                      pending: schedule[getDateKey(date)][time].status === '審核中',
+                      'teacher-approved': schedule[getDateKey(date)][time].status === '教師核准',
+                      approved: schedule[getDateKey(date)][time].status === '已預約',
+                    }"
                   >
                     {{ schedule[getDateKey(date)][time].name }}
                   </div>

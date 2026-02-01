@@ -99,12 +99,12 @@ async function handleSignOff(status) {
 // Lifecycle
 onMounted(async () => {
   if (!authStore.isLoggedIn) {
-     // Redirect to login with return url
-     router.push({
-        path: '/login',
-        query: { redirect: route.fullPath }
-     })
-     return
+    // Redirect to login with return url
+    router.push({
+      path: '/login',
+      query: { redirect: route.fullPath },
+    })
+    return
   }
   await fetchBookingData()
 })
