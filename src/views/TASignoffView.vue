@@ -81,7 +81,7 @@ const handleSignoff = async (status) => {
 
   try {
     await axios.post(`${API_BASE}/bookings/ta-signoff`, {
-      id: request.value.request_id,
+      id: request.value.public_id,
       status: status,
       reject_reason: rejectReason.value, // Backend expects 'reject_reason' for TA
     })

@@ -1,13 +1,16 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import axios from 'axios'
+import { useRoute, useRouter } from 'vue-router'
+import apiClient from '@/api/axios' // Import configured instance
+import { useAuthStore } from '@/stores/auth'
 
 // Constants
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 // Route & State
 const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
 const bookingId = route.query.id
 
 const requestData = ref(null)
@@ -50,7 +53,7 @@ async function fetchBookingData() {
   }
 
   try {
-    const data = await axios.get(`${BASE_URL}/bookings/${bookingId}`)
+    const data = await apiClient.get(`/bookings/${bookingId}`)
 
     if (data.status === 200) {
       requestData.value = data.data[0]
@@ -72,7 +75,7 @@ async function handleSignOff(status) {
   isSubmitting.value = true
 
   try {
-    const data = await axios.post(`${BASE_URL}/bookings/signoff`, {
+    const data = await apiClient.post(`/bookings/signoff`, {
       id: bookingId,
       status: status,
       comment: comment.value,
@@ -93,7 +96,18 @@ async function handleSignOff(status) {
 }
 
 // Lifecycle
-onMounted(fetchBookingData)
+// Lifecycle
+onMounted(async () => {
+  if (!authStore.isLoggedIn) {
+     // Redirect to login with return url
+     router.push({
+        path: '/login',
+        query: { redirect: route.fullPath }
+     })
+     return
+  }
+  await fetchBookingData()
+})
 </script>
 
 <template>

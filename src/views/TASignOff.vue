@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
+import apiClient from '@/api/axios'
 
 // Constants
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
@@ -51,7 +51,7 @@ async function fetchBookingData() {
   }
 
   try {
-    const data = await axios.get(`${BASE_URL}/bookings/${bookingId}`)
+    const data = await apiClient.get(`/bookings/${bookingId}`)
 
     if (data.status === 200) {
       requestData.value = data.data[0]
@@ -74,10 +74,10 @@ async function handleSignOff(status) {
   isSubmitting.value = true
 
   try {
-    const data = await axios.post(`${BASE_URL}/bookings/ta-signoff`, {
+    const data = await apiClient.post(`/bookings/ta-signoff`, {
       id: bookingId,
       status: status,
-      comment: comment.value,
+      reject_reason: comment.value, // Backend expects 'reject_reason' for TA
     })
 
     if (data.status === 200) {
