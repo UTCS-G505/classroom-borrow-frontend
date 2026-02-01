@@ -135,7 +135,7 @@ const validateField = (field) => {
     errors.startTime = '' // 清除開始時間的錯誤訊息
     errors.endTime = '' // 清除結束時間的錯誤訊息
 
-    if (form.startTime && form.endTime && form.startTime >= form.endTime) {
+    if (form.startTime && form.endTime && form.startTime > form.endTime) {
       errors.startTime = '開始時間必須早於結束時間'
       errors.endTime = '結束時間必須晚於開始時間'
       return false
