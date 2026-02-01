@@ -117,7 +117,11 @@ async function fetchSchedule(classroomId = selectedRoom.value) {
       timeSlots.forEach((slot) => {
         const slotStart = parseInt(slot.split('-')[0].split(':')[0])
         if (slotStart >= startHour && slotStart < endHour) {
-          transformedData[roomId][dateKey][slot] = eventName
+          // Store object with name and status
+          transformedData[roomId][dateKey][slot] = {
+             name: eventName,
+             status: item.status
+          }
         }
       })
     })
@@ -367,8 +371,15 @@ function selectRoom(id) {
                     toggleSlot(date, tIdx)
                   "
                 >
-                  <div v-if="schedule[getDateKey(date)]?.[time]" class="event">
-                    {{ schedule[getDateKey(date)][time] }}
+                  <div v-if="schedule[getDateKey(date)]?.[time]" 
+                       class="event"
+                       :class="{
+                         'pending': schedule[getDateKey(date)][time].status === '審核中',
+                         'teacher-approved': schedule[getDateKey(date)][time].status === '教師核准',
+                         'approved': schedule[getDateKey(date)][time].status === '已預約'
+                       }"
+                  >
+                    {{ schedule[getDateKey(date)][time].name }}
                   </div>
 
                   <div v-else-if="!isSelected(getDateKey(date), tIdx)" class="emptySlot">+</div>
@@ -649,8 +660,28 @@ th.todayColumn::after {
   color: #333;
   overflow: hidden;
   text-overflow: ellipsis;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
+}
+
+.event.pending {
+  background-color: #e0f2fe; /* light blue */
+  color: #0369a1;
+  border-left: 3px solid #0ea5e9;
+}
+
+.event.teacher-approved {
+  background-color: #f3e8ff; /* light purple */
+  color: #7e22ce;
+  border-left: 3px solid #a855f7;
+}
+
+.event.approved {
+  background-color: #dcfce7; /* light green */
+  color: #15803d;
+  border-left: 3px solid #22c55e;
 }
 
 .navigation {
