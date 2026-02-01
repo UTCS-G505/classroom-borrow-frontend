@@ -78,14 +78,6 @@ const records = reactive([])
 
 // Fetch records from API
 const fetchRecords = async () => {
-  if (!authStore.isLoggedIn.value) {
-    router.push({
-      path: '/login',
-      query: { redirect: route.fullPath },
-    })
-    return
-  }
-
   const userId = userStore.userId.value
   if (!userId) {
     error.value = '無法取得用戶資訊'

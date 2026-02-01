@@ -349,14 +349,6 @@ const submitForm = async () => {
 // 在組件掛載時設置教室名稱
 // 在組件掛載時設置教室名稱與預填資料
 onMounted(() => {
-  if (!authStore.isLoggedIn.value) {
-    router.push({
-      path: '/login',
-      query: { redirect: route.fullPath },
-    })
-    return
-  }
-
   const query = route.query
 
   // 1. 帶入教室 ID

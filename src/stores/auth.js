@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { getJwtExp } from '../utils/getJWTExp.js'
 import { authApi } from '@/api/auth.api'
 import { setAuthTokenGetter, setUnauthorizedHandler } from '@/api/axios'
@@ -10,6 +10,26 @@ const refreshTimerId = ref(null)
 const isRefreshing = ref(false)
 let interceptorsInitialized = false
 let activeRefreshPromise = null
+
+const isInitialized = ref(false)
+const ensureInitialized = () => {
+  return new Promise((resolve) => {
+    if (isInitialized.value) {
+      resolve()
+    } else {
+      const unwatch = watch(
+        isInitialized,
+        (newValue) => {
+          if (newValue) {
+            unwatch()
+            resolve()
+          }
+        },
+        { immediate: true },
+      )
+    }
+  })
+}
 
 // Initialize interceptors once (outside the composable)
 const initializeInterceptors = (refreshFn) => {
@@ -128,6 +148,7 @@ export function useAuthStore() {
         clearAuth()
       }
     }
+    isInitialized.value = true
   }
 
   const scheduleTokenRefresh = () => {
@@ -208,6 +229,8 @@ export function useAuthStore() {
     accessToken: computed(() => accessToken.value),
     user_id: computed(() => user_id.value),
     isLoggedIn,
+    isInitialized: computed(() => isInitialized.value),
+    ensureInitialized,
     setAuth,
     clearAuth,
     getAccessToken,
