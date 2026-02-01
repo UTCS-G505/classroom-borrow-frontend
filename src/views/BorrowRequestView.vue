@@ -254,7 +254,6 @@ const submitForm = async () => {
     return
   }
 
-<<<<<<< HEAD
   if (isSubmitting.value) return
   isSubmitting.value = true
 
