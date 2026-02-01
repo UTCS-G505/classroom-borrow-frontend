@@ -36,10 +36,6 @@ export function useAuthStore() {
     }
   }
 
-  const setUser = (newUser) => {
-    user.value = newUser
-  }
-
   const clearAuth = () => {
     accessToken.value = null
     user_id.value = null

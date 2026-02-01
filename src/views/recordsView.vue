@@ -1,12 +1,8 @@
 <script setup>
 import { reactive, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
 import { bookingsApi } from '@/api/bookings.api'
-import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 
-const route = useRoute()
-const authStore = useAuthStore()
 const userStore = useUserStore()
 
 // 控制彈出視窗的顯示
