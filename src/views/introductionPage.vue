@@ -1,11 +1,12 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { classroomsApi } from '@/api/classrooms.api'
 
 const route = useRoute()
 const router = useRouter()
 
-// 教室資料
+// 教室資料 (會從 API 載入並合併本地資料)
 const classrooms = ref([
   {
     id: 'G312',
@@ -81,6 +82,53 @@ const classrooms = ref([
     seatMap: '/downloads/G516-seatmap.pdf',
   },
 ])
+
+const isLoading = ref(false)
+
+// 從 API 載入教室資料並合併
+const loadClassroomsFromAPI = async () => {
+  isLoading.value = true
+  try {
+    const response = await classroomsApi.getAllClassrooms()
+    const apiClassrooms = response.data || []
+
+    // Merge API data with local data (API data takes precedence for matching IDs)
+    apiClassrooms.forEach((apiRoom) => {
+      const existingIndex = classrooms.value.findIndex((room) => room.id === apiRoom.classroom_id)
+      if (existingIndex >= 0) {
+        // Update existing room with API data
+        classrooms.value[existingIndex] = {
+          ...classrooms.value[existingIndex],
+          name: apiRoom.name || classrooms.value[existingIndex].name,
+          type: apiRoom.type,
+          capacity: apiRoom.capacity,
+          equipment: apiRoom.description || classrooms.value[existingIndex].equipment,
+        }
+      } else {
+        // Add new room from API
+        classrooms.value.push({
+          id: apiRoom.classroom_id,
+          name: apiRoom.name,
+          location: '',
+          equipment: apiRoom.description || '',
+          type: apiRoom.type,
+          capacity: apiRoom.capacity,
+          img: apiRoom.image_url ? [apiRoom.image_url] : [],
+          seatMap: '',
+        })
+      }
+    })
+  } catch (error) {
+    console.error('載入教室資料失敗:', error)
+    // Keep using local data if API fails
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadClassroomsFromAPI()
+})
 
 // 儲存每個教室目前圖片索引
 const currentImageIndex = ref({}) // { 'G312': 0, 'G313': 0, ... }

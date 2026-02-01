@@ -6,7 +6,7 @@ import HomePage from '../views/HomePage.vue'
 import recordsView from '../views/recordsView.vue'
 import AdminDashboard from '../views/AdminDashboard.vue'
 import LoginView from '../views/LoginView.vue'
-// 👇 1. 引入剛剛建立的簽核頁面 (請確認你的檔案路徑是否在 views 資料夾)
+import StatusPage from '../views/StatusPage.vue'
 import TeacherSignOff from '../views/TeacherSignOff.vue'
 import TASignOff from '../views/TASignOff.vue'
 
@@ -46,9 +46,13 @@ const routes = [
     name: 'LoginView',
     component: LoginView,
   },
-  // 👇 2. 新增老師簽核頁面的路由
   {
-    path: '/teacher-signoff', // 對應 Email 連結中的路徑
+    path: '/borrow_status',
+    name: 'StatusPage',
+    component: StatusPage,
+  },
+  {
+    path: '/teacher-signoff',
     name: 'TeacherSignOff',
     component: TeacherSignOff,
   },
