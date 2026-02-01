@@ -34,7 +34,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToastStore } from '@/stores/toast'
-import axios from 'axios'
+import { bookingsApi } from '@/api/bookings.api'
 
 const route = useRoute()
 const toastStore = useToastStore()
@@ -44,8 +44,6 @@ const error = ref('')
 
 const showRejectInput = ref(false)
 const rejectReason = ref('')
-
-const API_BASE = 'http://localhost:3000'
 
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
@@ -60,7 +58,7 @@ const fetchRequest = async () => {
     return
   }
   try {
-    const res = await axios.get(`${API_BASE}/bookings/${id}`)
+    const res = await bookingsApi.getBookingById(id)
     if (res.data && res.data.length > 0) {
       request.value = res.data[0]
     } else {
@@ -81,7 +79,7 @@ const handleSignoff = async (status) => {
   }
 
   try {
-    await axios.post(`${API_BASE}/bookings/signoff`, {
+    await bookingsApi.teacherSignoff({
       id: request.value.request_id,
       status: status,
       comment: rejectReason.value, // Backend expects 'comment' for teacher
