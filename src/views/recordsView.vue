@@ -87,19 +87,20 @@ const fetchRecords = async () => {
 
   try {
     const response = await bookingsApi.getMyBookings(userId)
-    
+
     // Clear existing records
     records.splice(0, records.length)
-    
+
     // Map API response to record format
     const apiRecords = response.data || []
     apiRecords.forEach((item) => {
       const record = {
         id: `BR${String(item.request_id).padStart(4, '0')}`,
         request_id: item.request_id,
-        date: item.borrow_type === '多次借用' && item.end_date
-          ? `${formatDate(item.start_date)} 至 ${formatDate(item.end_date)}`
-          : formatDate(item.start_date),
+        date:
+          item.borrow_type === '多次借用' && item.end_date
+            ? `${formatDate(item.start_date)} 至 ${formatDate(item.end_date)}`
+            : formatDate(item.start_date),
         room: item.classroom_id,
         time: formatTimeRange(item.start_time, item.end_time),
         status: item.status,
@@ -151,7 +152,7 @@ const returnItem = async (record) => {
   if (confirm(`確定要歸還 ${record.room} 的借用嗎？`)) {
     try {
       await bookingsApi.returnBooking(record.request_id)
-      
+
       // 更新狀態
       record.status = '已歸還'
       record.action = ''
@@ -169,7 +170,7 @@ const cancelApplication = async (record) => {
   if (confirm(`確定要取消 ${record.room} 的申請嗎？`)) {
     try {
       await bookingsApi.cancelBooking(record.request_id)
-      
+
       // 從紀錄中移除或更新狀態
       const index = records.findIndex((r) => r.id === record.id)
       if (index > -1) {

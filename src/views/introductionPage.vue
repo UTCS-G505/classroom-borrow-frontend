@@ -91,12 +91,10 @@ const loadClassroomsFromAPI = async () => {
   try {
     const response = await classroomsApi.getAllClassrooms()
     const apiClassrooms = response.data || []
-    
+
     // Merge API data with local data (API data takes precedence for matching IDs)
     apiClassrooms.forEach((apiRoom) => {
-      const existingIndex = classrooms.value.findIndex(
-        (room) => room.id === apiRoom.classroom_id
-      )
+      const existingIndex = classrooms.value.findIndex((room) => room.id === apiRoom.classroom_id)
       if (existingIndex >= 0) {
         // Update existing room with API data
         classrooms.value[existingIndex] = {

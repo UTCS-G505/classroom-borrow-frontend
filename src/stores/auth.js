@@ -148,7 +148,7 @@ export function useAuthStore() {
     }
 
     refreshTimerId.value = window.setTimeout(() => {
-      refresh().catch(() => { })
+      refresh().catch(() => {})
     }, delay)
   }
 

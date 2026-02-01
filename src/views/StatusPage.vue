@@ -100,7 +100,7 @@ async function fetchSchedule(classroomId = selectedRoom.value) {
     data.forEach((item) => {
       // Handle both possible structures (item or item.data if nested)
       // The API typically returns plain objects
-      
+
       const roomId = item.classroom_id
       const dateKey = item.date.split('T')[0]
       const eventName = item.event_name
@@ -112,7 +112,7 @@ async function fetchSchedule(classroomId = selectedRoom.value) {
       const startHour = parseInt(startTime.split(':')[0])
       const endHour = parseInt(endTime.split(':')[0])
 
-       timeSlots.forEach((slot) => {
+      timeSlots.forEach((slot) => {
         const slotStart = parseInt(slot.split('-')[0].split(':')[0])
         if (slotStart >= startHour && slotStart < endHour) {
           transformedData[roomId][dateKey][slot] = eventName
@@ -122,25 +122,24 @@ async function fetchSchedule(classroomId = selectedRoom.value) {
 
     // Update scheduleData
     if (!scheduleData.value[classroomId]) {
-       scheduleData.value[classroomId] = {}
+      scheduleData.value[classroomId] = {}
     }
-    
+
     // Merge new data
     // First clear existing data for this range to avoid stale entries if implementation detail changes
     // But here we are building a cache. Let's merge deep.
     // Actually, to handle updates properly, we should populate the fetched range.
-    
+
     // For simplicity and matching previous logic:
     Object.keys(transformedData).forEach((roomId) => {
       if (!scheduleData.value[roomId]) scheduleData.value[roomId] = {}
-      Object.keys(transformedData[roomId]).forEach(dateKey => {
-         scheduleData.value[roomId][dateKey] = {
-             ...scheduleData.value[roomId][dateKey],
-             ...transformedData[roomId][dateKey]
-         }
+      Object.keys(transformedData[roomId]).forEach((dateKey) => {
+        scheduleData.value[roomId][dateKey] = {
+          ...scheduleData.value[roomId][dateKey],
+          ...transformedData[roomId][dateKey],
+        }
       })
     })
-
   } catch (err) {
     error.value = '讀取課表資料失敗'
     console.error(err)
