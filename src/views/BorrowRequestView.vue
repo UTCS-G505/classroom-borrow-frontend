@@ -1,9 +1,13 @@
 <script setup>
-import { reactive, onMounted, ref } from 'vue'
+import { reactive, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router' // 引入 useRoute
+import { useUserStore } from '@/stores/user'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute() // 獲取當前路由->讀取資料
 const router = useRouter() // 獲取路由實例->導航跳轉
+const userStore = useUserStore()
+const authStore = useAuthStore()
 
 // 當前階段 (1, 2, 3)
 const currentStage = ref(1)
@@ -80,11 +84,8 @@ const validateField = (field) => {
       (field === 'multiStartDate' || field === 'multiEndDate' || field == 'repeatType')
     ) {
       return true // 單次借用不需要多次借用的日期
-    } else if (
-      form.borrowType == '多次借用' &&
-      (field === 'date' || field === 'startTime' || field === 'endTime')
-    ) {
-      return true // 多次借用不需要單次借用的日期
+    } else if (form.borrowType == '多次借用' && field === 'date') {
+      return true // 多次借用不需要單次借用的日期，但仍需要活動時間
     } else {
       errors[field] = '此欄位必填'
       return false
@@ -132,7 +133,7 @@ const validateField = (field) => {
     errors.startTime = '' // 清除開始時間的錯誤訊息
     errors.endTime = '' // 清除結束時間的錯誤訊息
 
-    if (form.startTime && form.endTime && form.startTime >= form.endTime) {
+    if (form.startTime && form.endTime && form.startTime > form.endTime) {
       errors.startTime = '開始時間必須早於結束時間'
       errors.endTime = '結束時間必須晚於開始時間'
       return false
@@ -238,89 +239,182 @@ const prevStage = () => {
   }
 }
 
-const submitForm = () => {
+// -------------------------------------------------------------------
+// 👇 修改後的 submitForm 函式 (串接後端寄信)
+// -------------------------------------------------------------------
+const submitForm = async () => {
+  // 1. 驗證表單
   if (!validateStage3()) {
     alert('請修正表單中的錯誤！')
     return
   }
 
+  // 2. 複製資料到 result (保留你原本的邏輯)
   Object.keys(form).forEach((key) => {
-    result[key] = form[key] // 將表單資料複製到 result
+    result[key] = form[key]
   })
 
-  console.log('送出資料：', result)
-  alert('表單已送出！')
+  // 3. 呼叫後端 API
+  try {
+    // 判斷要傳送的日期 (單次用 date, 多次用 multiStartDate)
+    const apiDate = result.borrowType === '多次借用' ? result.multiStartDate : result.date
 
-  // 清空表單資料
-  Object.keys(form).forEach((key) => {
-    form[key] = ''
-  })
-
-  // 清空錯誤訊息
-  Object.keys(errors).forEach((key) => {
-    errors[key] = ''
-  })
-  // 根據借用類型決定路由跳轉參數
-  if (result.borrowType === '多次借用') {
-    // 多次借用的路由跳轉
-    router.push({
-      path: '/record',
-      query: {
-        multiStartDate: result.multiStartDate,
-        multiEndDate: result.multiEndDate,
-        room: result.classroom,
-        startTime: result.startTime,
-        endTime: result.endTime,
-        eventName: result.eventName,
-        peopleCount: result.peopleCount,
-        borrowType: result.borrowType,
-        repeatType: result.repeatType,
-        description: result.description,
-        borrowerName: result.borrowerName,
-        teacherName: result.teacherName,
-        borrowerDepartment: result.borrowerDepartment,
-        teacherDepartment: result.teacherDepartment,
-        borrowerEmail: result.borrowerEmail,
-        teacherEmail: result.teacherEmail,
-        borrowerPhone: result.borrowerPhone,
-        teacherPhone: result.teacherPhone,
+    const response = await fetch('/api/borrow', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        // --- 欄位對應 ---
+        userEmail: result.borrowerEmail, // 前端 borrowerEmail -> 後端 userEmail
+        teacherEmail: result.teacherEmail, // 前端 teacherEmail -> 後端 teacherEmail
+        classroom: result.classroom,
+        date: apiDate,
+        time: `${result.startTime} - ${result.endTime}`,
+        activityName: result.eventName, // 前端 eventName -> 後端 activityName
+      }),
     })
-  } else {
-    // 單次借用的路由跳轉
-    router.push({
-      path: '/record',
-      query: {
-        date: result.date,
-        room: result.classroom,
-        time: `${result.startTime.slice(0, 4)} - ${result.endTime.slice(5, 9)}`,
-        eventName: result.eventName,
-        peopleCount: result.peopleCount,
-        borrowType: result.borrowType,
-        description: result.description,
-        borrowerName: result.borrowerName,
-        teacherName: result.teacherName,
-        borrowerDepartment: result.borrowerDepartment,
-        teacherDepartment: result.teacherDepartment,
-        borrowerEmail: result.borrowerEmail,
-        teacherEmail: result.teacherEmail,
-        borrowerPhone: result.borrowerPhone,
-        teacherPhone: result.teacherPhone,
-      },
-    })
+
+    const apiResult = await response.json()
+
+    if (response.ok) {
+      // --- 成功 ---
+      console.log('送出資料：', result)
+      alert(`申請成功！\n${apiResult.message}`) // 顯示後端回傳的成功訊息
+
+      // 清空表單資料
+      Object.keys(form).forEach((key) => {
+        form[key] = ''
+      })
+      Object.keys(errors).forEach((key) => {
+        errors[key] = ''
+      })
+
+      // --- 執行路由跳轉 (移到成功之後才跳轉) ---
+      if (result.borrowType === '多次借用') {
+        router.push({
+          path: '/record',
+          query: {
+            multiStartDate: result.multiStartDate,
+            multiEndDate: result.multiEndDate,
+            room: result.classroom,
+            startTime: result.startTime,
+            endTime: result.endTime,
+            eventName: result.eventName,
+            peopleCount: result.peopleCount,
+            borrowType: result.borrowType,
+            repeatType: result.repeatType,
+            description: result.description,
+            borrowerName: result.borrowerName,
+            teacherName: result.teacherName,
+            borrowerDepartment: result.borrowerDepartment,
+            teacherDepartment: result.teacherDepartment,
+            borrowerEmail: result.borrowerEmail,
+            teacherEmail: result.teacherEmail,
+            borrowerPhone: result.borrowerPhone,
+            teacherPhone: result.teacherPhone,
+          },
+        })
+      } else {
+        router.push({
+          path: '/record',
+          query: {
+            date: result.date,
+            room: result.classroom,
+            time: `${result.startTime.slice(0, 4)} - ${result.endTime.slice(5, 9)}`,
+            eventName: result.eventName,
+            peopleCount: result.peopleCount,
+            borrowType: result.borrowType,
+            description: result.description,
+            borrowerName: result.borrowerName,
+            teacherName: result.teacherName,
+            borrowerDepartment: result.borrowerDepartment,
+            teacherDepartment: result.teacherDepartment,
+            borrowerEmail: result.borrowerEmail,
+            teacherEmail: result.teacherEmail,
+            borrowerPhone: result.borrowerPhone,
+            teacherPhone: result.teacherPhone,
+          },
+        })
+      }
+
+      // 重置到第一階段
+      currentStage.value = 1
+    } else {
+      // --- 失敗 ---
+      alert('❌ 申請失敗：' + apiResult.message)
+    }
+  } catch (error) {
+    console.error('API Error:', error)
+    alert('連線錯誤，無法寄送申請信，請確認後端服務是否開啟。')
   }
-
-  // 重置到第一階段
-  currentStage.value = 1
 }
 
 // 在組件掛載時設置教室名稱
+// 在組件掛載時設置教室名稱與預填資料
 onMounted(() => {
-  const roomId = route.query.roomId // 獲取 query 中的 roomId
-  if (roomId) {
-    form.classroom = roomId // 將 roomId 設置到 form.classroom
+  const query = route.query
+
+  // 1. 帶入教室 ID
+  if (query.roomId) {
+    form.classroom = query.roomId
+  }
+
+  // 2. 帶入借用類型 (必須先設定，因為這會影響欄位顯示邏輯)
+  if (query.borrowType) {
+    form.borrowType = query.borrowType
+  }
+
+  // 3. 帶入日期
+  if (query.date) {
+    form.date = query.date
+  }
+
+  // 4. 帶入開始與結束時間
+  // 注意：這裡的值必須完全對應 <option value="..."> 的內容
+  if (query.startTime) {
+    form.startTime = query.startTime
+  }
+
+  if (query.endTime) {
+    form.endTime = query.endTime
+  }
+
+  // 如果用戶已登入，自動填充借用人資訊
+  if (authStore.isLoggedIn.value && userStore.profile) {
+    autoFillBorrowerInfo()
   }
 })
+
+// 監聽用戶登入狀態和 profile 變化，自動填充借用人資訊
+watch(
+  () => [authStore.isLoggedIn.value, userStore.profile],
+  () => {
+    if (authStore.isLoggedIn.value && userStore.profile) {
+      autoFillBorrowerInfo()
+    }
+  },
+  { deep: true },
+)
+
+// 自動填充借用人資訊的函數
+const autoFillBorrowerInfo = () => {
+  if (userStore.profile) {
+    if (!form.borrowerName) {
+      form.borrowerName = userStore.username || ''
+    }
+    if (!form.borrowerEmail) {
+      form.borrowerEmail = userStore.primary_email || ''
+    }
+    if (!form.borrowerPhone) {
+      form.borrowerPhone = userStore.phone_number || ''
+    }
+    if (!form.borrowerDepartment) {
+      form.borrowerDepartment =
+        userStore.role && 0 <= userStore.role.value && userStore.role.value <= 4 ? '資科系' : ''
+    }
+  }
+}
 </script>
 
 <template>
@@ -328,7 +422,6 @@ onMounted(() => {
     <h1 style="padding: 0px 0px 0px 10px">借用申請</h1>
     <hr />
 
-    <!-- 階段指示器 -->
     <div class="stage-indicator">
       <div class="stage-item" :class="{ active: currentStage === 1, completed: currentStage > 1 }">
         <div class="stage-number">1</div>
@@ -346,12 +439,10 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 階段 1: 基本借用資訊 -->
     <div v-if="currentStage === 1" class="form-container">
       <h1>基本借用資訊</h1>
       <hr style="width: 96%; margin: 0 auto" />
 
-      <!-- 選擇教室 & 活動人數 -->
       <div class="row">
         <div class="field">
           <label>選擇教室</label>
@@ -386,7 +477,6 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- 借用類型 -->
       <div class="row">
         <div class="field">
           <label>借用類型</label>
@@ -414,7 +504,6 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- 顯示多次借用的額外選項 -->
       <div v-if="form.borrowType === '多次借用'" class="row">
         <div class="field">
           <label>頻率</label>
@@ -453,9 +542,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- 日期 & 時間 -->
       <div class="row">
-        <!-- 單次借用時顯示選擇日期 -->
         <div class="field" v-if="form.borrowType !== '多次借用'">
           <label>選擇日期</label>
           <input
@@ -467,7 +554,6 @@ onMounted(() => {
           <span class="error" v-if="errors.date">{{ errors.date }}</span>
         </div>
 
-        <!-- 活動時間 -->
         <div class="field">
           <label>活動時間(起)</label>
           <select
@@ -521,12 +607,10 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 階段 2: 活動資訊 -->
     <div v-if="currentStage === 2" class="form-container">
       <h1>活動資訊</h1>
       <hr style="width: 96%; margin: 0 auto" />
 
-      <!-- 活動名稱 -->
       <div class="field">
         <label>活動名稱</label>
         <input
@@ -537,7 +621,6 @@ onMounted(() => {
         <span class="error" v-if="errors.eventName">{{ errors.eventName }}</span>
       </div>
 
-      <!-- 活動內容 -->
       <div class="field">
         <label>活動內容說明</label>
         <textarea
@@ -549,12 +632,10 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 階段 3: 聯絡資訊 -->
     <div v-if="currentStage === 3" class="form-container">
       <h1>聯絡資訊</h1>
       <hr style="width: 96%; margin: 0 auto" />
 
-      <!-- 借用人姓名 & 指導老師姓名 -->
       <div class="row">
         <div class="field">
           <label>借用人姓名</label>
@@ -577,7 +658,6 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- 借用人系級/服務單位 & 指導老師系所(單位) -->
       <div class="row">
         <div class="field">
           <label>借用人系級/服務單位</label>
@@ -601,7 +681,6 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- 借用人Email & 指導老師Email -->
       <div class="row">
         <div class="field">
           <label>借用人Email</label>
@@ -623,7 +702,6 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- 借用人聯絡電話 & 指導老師連絡電話 -->
       <div class="row">
         <div class="field">
           <label>借用人聯絡電話</label>
@@ -646,7 +724,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 導航按鈕 -->
     <div class="navigation-buttons">
       <button v-if="currentStage > 1" @click="prevStage" class="btn-prev">上一步</button>
       <button v-if="currentStage < 3" @click="nextStage" class="btn-next">下一步</button>
