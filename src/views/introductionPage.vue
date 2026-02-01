@@ -1,6 +1,9 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
 
 // 教室資料
 const classrooms = ref([
@@ -112,9 +115,20 @@ function scrollToRoom(id) {
   }
 }
 
-//導向借用頁面
-const router = useRouter()
+// 監聽掛載，如果有 roomId 就滾動
+onMounted(async () => {
+  const roomId = route.query.roomId
+  if (roomId) {
+    // 使用 nextTick 確保 DOM 已經渲染完成
+    await nextTick()
+    // 延遲一點點滾動，避免有些瀏覽器渲染過快導致高度計算不準
+    setTimeout(() => {
+      scrollToRoom(roomId)
+    }, 100)
+  }
+})
 
+//導向借用頁面
 function goToBorrowPage(roomId) {
   router.push({
     path: '/borrow',
