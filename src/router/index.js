@@ -40,6 +40,8 @@ const routes = [
     path: '/admin', // 借用管理頁面
     name: 'AdminDashboard',
     component: AdminDashboard,
+  },
+  {
     path: '/login', // 登入頁
     name: 'LoginView',
     component: LoginView,
