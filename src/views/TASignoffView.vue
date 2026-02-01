@@ -34,9 +34,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useToastStore } from '@/stores/toast'
 import axios from 'axios'
 
 const route = useRoute()
+const toastStore = useToastStore()
 const request = ref(null)
 const loading = ref(true)
 const error = ref('')
@@ -75,7 +77,7 @@ const fetchRequest = async () => {
 
 const handleSignoff = async (status) => {
   if (status === '退件' && !rejectReason.value) {
-    alert('請輸入退件理由')
+    toastStore.showToast('請輸入退件理由', 'warning')
     return
   }
 
@@ -85,11 +87,11 @@ const handleSignoff = async (status) => {
       status: status,
       reject_reason: rejectReason.value, // Backend expects 'reject_reason' for TA
     })
-    alert('簽核完成')
+    toastStore.showToast('簽核完成', 'success')
     location.reload()
   } catch (err) {
     console.error(err)
-    alert('簽核失敗: ' + (err.response?.data?.message || err.message))
+    toastStore.showToast('簽核失敗: ' + (err.response?.data?.message || err.message), 'error')
   }
 }
 

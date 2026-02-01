@@ -4,11 +4,13 @@ import { useRouter, useRoute } from 'vue-router'
 import { bookingsApi } from '@/api/bookings.api'
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const authStore = useAuthStore()
+const toastStore = useToastStore()
 
 // 控制彈出視窗的顯示
 const showDetailModal = ref(false)
@@ -166,10 +168,10 @@ const returnItem = async (record) => {
       record.status = '已歸還'
       record.action = ''
 
-      alert('歸還申請已送出')
+      toastStore.showToast('歸還申請已送出', 'success')
     } catch (err) {
       console.error('歸還失敗:', err)
-      alert(err.response?.data?.message || '歸還失敗，請稍後再試')
+      toastStore.showToast(err.response?.data?.message || '歸還失敗，請稍後再試', 'error')
     }
   }
 }
@@ -187,10 +189,10 @@ const cancelApplication = async (record) => {
         records[index].action = ''
       }
 
-      alert('取消申請已送出')
+      toastStore.showToast('取消申請已送出', 'success')
     } catch (err) {
       console.error('取消失敗:', err)
-      alert(err.response?.data?.message || '取消失敗，請稍後再試')
+      toastStore.showToast(err.response?.data?.message || '取消失敗，請稍後再試', 'error')
     }
   }
 }

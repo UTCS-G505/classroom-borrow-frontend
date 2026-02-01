@@ -3,12 +3,14 @@ import { reactive, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router' // 引入 useRoute
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 import { bookingsApi } from '@/api/bookings.api'
 
 const route = useRoute() // 獲取當前路由->讀取資料
 const router = useRouter() // 獲取路由實例->導航跳轉
 const userStore = useUserStore()
 const authStore = useAuthStore()
+const toastStore = useToastStore()
 
 // 當前階段 (1, 2, 3)
 const currentStage = ref(1)
@@ -218,13 +220,13 @@ const nextStage = () => {
   if (currentStage.value === 1) {
     canProceed = validateStage1()
     if (!canProceed) {
-      alert('請完成基本借用資訊！')
+      toastStore.showToast('請完成基本借用資訊！', 'warning')
       return
     }
   } else if (currentStage.value === 2) {
     canProceed = validateStage2()
     if (!canProceed) {
-      alert('請完成活動資訊！')
+      toastStore.showToast('請完成活動資訊！', 'warning')
       return
     }
   }
@@ -247,7 +249,7 @@ const prevStage = () => {
 const submitForm = async () => {
   // 1. 驗證表單
   if (!validateStage3()) {
-    alert('請修正表單中的錯誤！')
+    toastStore.showToast('請修正表單中的錯誤！', 'warning')
     return
   }
 
@@ -259,7 +261,7 @@ const submitForm = async () => {
     const userId = userStore.userId.value
 
     if (!userId) {
-      alert('無法取得用戶資訊，請重新登入')
+      toastStore.showToast('無法取得用戶資訊，請重新登入', 'error')
       router.push('/login')
       return
     }
@@ -321,6 +323,7 @@ const submitForm = async () => {
       // })
 
       // Navigate to records page
+      toastStore.showToast('借用申請已提交', 'success')
       router.push({ path: '/record' })
 
       // 重置到第一階段
@@ -329,14 +332,14 @@ const submitForm = async () => {
   } catch (error) {
     console.error('提交失敗:', error)
     if (error.response?.status === 409) {
-      alert('時段已被預約，請選擇其他時段')
+      toastStore.showToast('時段已被預約，請選擇其他時段', 'error')
     } else if (error.response?.status === 401) {
-      alert('請先登入')
+      toastStore.showToast('請先登入', 'error')
       router.push({ path: '/login' })
     } else if (error.response?.status === 403) {
-      alert('您沒有權限進行此操作')
+      toastStore.showToast('您沒有權限進行此操作', 'error')
     } else {
-      alert(error.response?.data?.message || '提交失敗，請稍後再試')
+      toastStore.showToast(error.response?.data?.message || '提交失敗，請稍後再試', 'error')
     }
   } finally {
     isSubmitting.value = false
@@ -728,7 +731,9 @@ const autoFillBorrowerInfo = () => {
     <div class="navigation-buttons">
       <button v-if="currentStage > 1" @click="prevStage" class="btn-prev">上一步</button>
       <button v-if="currentStage < 3" @click="nextStage" class="btn-next">下一步</button>
-      <button v-if="currentStage === 3" @click="submitForm" class="btn-submit">送出申請</button>
+      <button v-if="currentStage === 3" @click="submitForm" class="btn-submit" :disabled="isSubmitting">
+        {{ isSubmitting ? '提交中...' : '送出申請' }}
+      </button>
     </div>
   </div>
 </template>
