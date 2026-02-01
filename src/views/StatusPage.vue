@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { scheduleApi } from '@/api/schedule.api'
 
 const router = useRouter()
 
@@ -75,9 +76,77 @@ const selectedRoom = ref('G312')
 const weekOffset = ref(0)
 const scheduleData = ref({})
 const error = ref('')
+const isLoading = ref(false)
 
 const weekDates = computed(() => getWeekDates(weekOffset.value))
 const schedule = computed(() => scheduleData.value[selectedRoom.value] || {})
+
+// Fetch schedule for a specific room and date range
+const fetchScheduleForRoom = async (roomId, dates) => {
+  const roomSchedule = {}
+  
+  for (const date of dates) {
+    const dateKey = getDateKey(date)
+    try {
+      const response = await scheduleApi.getClassroomSchedule(dateKey, roomId)
+      const scheduleItems = response.data || []
+      
+      // Initialize date entry if not exists
+      if (!roomSchedule[dateKey]) {
+        roomSchedule[dateKey] = {}
+      }
+      
+      // Map time slots to schedule entries
+      scheduleItems.forEach((item) => {
+        // Parse time_slot (e.g., "09:00-11:00") to find matching time slots
+        const [startTime, endTime] = item.time_slot.split('-')
+        
+        timeSlots.forEach((slot, index) => {
+          const [slotStart, slotEnd] = slot.split('-')
+          // Check if this slot falls within the booked time range
+          if (slotStart >= startTime && slotEnd <= endTime) {
+            roomSchedule[dateKey][index] = {
+              event: item.event_name,
+              status: item.status,
+              bookedBy: item.booked_by,
+            }
+          }
+        })
+      })
+    } catch (err) {
+      console.error(`Error fetching schedule for ${roomId} on ${dateKey}:`, err)
+    }
+  }
+  
+  return roomSchedule
+}
+
+// Load schedule for current room and week
+const loadSchedule = async () => {
+  isLoading.value = true
+  error.value = ''
+  
+  try {
+    const dates = weekDates.value
+    const roomSchedule = await fetchScheduleForRoom(selectedRoom.value, dates)
+    
+    // Update schedule data for the selected room
+    scheduleData.value = {
+      ...scheduleData.value,
+      [selectedRoom.value]: roomSchedule,
+    }
+  } catch (err) {
+    error.value = '載入行程失敗'
+    console.error(err)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Watch for room or week changes to reload schedule
+watch([selectedRoom, weekOffset], () => {
+  loadSchedule()
+})
 
 function isSelected(dateKey, tIdx) {
   return selectionState.value.dateKey === dateKey && selectionState.value.indices.includes(tIdx)
@@ -111,14 +180,8 @@ const selectedTimeRangeDisplay = computed(() => {
 })
 
 onMounted(async () => {
-  try {
-    const res = await fetch('/schedule.json')
-    if (!res.ok) throw new Error('HTTP error ' + res.status)
-    scheduleData.value = await res.json()
-  } catch (err) {
-    error.value = '讀取 JSON 檔案失敗'
-    console.error(err)
-  }
+  // Load schedule from API
+  await loadSchedule()
 })
 
 // --- 點擊格子 (已加入過去日期禁止條件) ---

@@ -40,8 +40,8 @@ const toggleUserMenu = () => {
 }
 
 // 登出功能
-const handleLogout = () => {
-  authStore.clearAuth()
+const handleLogout = async () => {
+  await authStore.logout()
   userStore.clearUserProfile()
   isUserMenuOpen.value = false
   isMobileMenuOpen.value = false

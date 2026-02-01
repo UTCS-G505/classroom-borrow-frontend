@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import { usersApi } from '@/api/users.api'
 import { useAuthStore } from './auth'
 
 const userProfile = ref(null)
@@ -15,13 +15,15 @@ export function useUserStore() {
   const position = computed(() => userProfile.value?.position || '')
   const profile = computed(() => userProfile.value)
   const isLoading = computed(() => isLoadingProfile.value)
+  // User ID for API calls (user_id in bookings) - from auth store (set during login)
+  const userId = computed(() => authStore.getUserId())
 
   // 獲取用戶資料
   const fetchUserProfile = async () => {
-    const uid = authStore.getUid()
+    const userId = authStore.getUserId()
     const token = authStore.getAccessToken()
 
-    if (!uid || !token) {
+    if (!userId || !token) {
       userProfile.value = null
       return
     }
@@ -30,14 +32,8 @@ export function useUserStore() {
 
     try {
       isLoadingProfile.value = true
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
-      const response = await axios.get(`${API_URL}/users/profile`, {
-        params: { uid },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      const response = await usersApi.getProfile(userId)
 
       if (response.data.success && response.data.data) {
         userProfile.value = response.data.data
@@ -62,6 +58,7 @@ export function useUserStore() {
     role,
     profile,
     position,
+    userId,
     isLoading,
     fetchUserProfile,
     clearUserProfile,

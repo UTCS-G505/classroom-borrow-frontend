@@ -1,13 +1,20 @@
 <script setup>
 import { reactive, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { bookingsApi } from '@/api/bookings.api'
+import { useAuthStore } from '@/stores/auth'
+import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
+const authStore = useAuthStore()
+const userStore = useUserStore()
 
 // 控制彈出視窗的顯示
 const showDetailModal = ref(false)
 const showReasonModal = ref(false)
 const currentRecord = ref({})
+const isLoading = ref(false)
+const error = ref('')
 
 // 狀態樣式分類函數
 const statusClass = (status) => {
@@ -15,113 +22,117 @@ const statusClass = (status) => {
     case '已歸還':
       return 'status-gray'
     case '駁回':
+    case '退件':
       return 'status-red'
     case '借用中':
+    case '已核准':
       return 'status-green'
     case '審核中':
       return 'status-blue'
+    case '已取消':
+      return 'status-gray'
     default:
       return 'status-gray'
   }
 }
 
-// 生成唯一編號的函數 - 縮短版本
-let idCounter = 1001
-const generateId = () => {
-  return 'BR' + (idCounter++).toString().padStart(4, '0')
+// Map API status to action
+const getAction = (status) => {
+  switch (status) {
+    case '退件':
+    case '駁回':
+      return '查看原因'
+    case '借用中':
+    case '已核准':
+      return '我要歸還'
+    case '審核中':
+      return '取消申請'
+    default:
+      return ''
+  }
 }
 
-// 預設紀錄 - 加入編號和完整資料
-const records = reactive([
-  {
-    id: generateId(),
-    date: '2025.05.25',
-    room: 'G501',
-    time: '09:10 - 12:00',
-    status: '已歸還',
-    action: '',
-    eventName: '程式設計課程',
-    peopleCount: 30,
-    borrowType: '單次借用',
-    description: '程式設計基礎教學課程',
-    borrowerName: '王小明',
-    teacherName: '李教授',
-    borrowerDepartment: '資訊工程系',
-    teacherDepartment: '資訊工程系',
-    borrowerEmail: 'wang@example.com',
-    teacherEmail: 'lee@example.com',
-    borrowerPhone: '0912-345-678',
-    teacherPhone: '02-1234-5678',
-  },
-  {
-    id: generateId(),
-    date: '2025.06.10',
-    room: 'G508',
-    time: '10:10 - 12:00',
-    status: '駁回',
-    action: '查看原因',
-    eventName: '學生會會議',
-    peopleCount: 15,
-    borrowType: '單次借用',
-    description: '學生會定期會議討論',
-    borrowerName: '陳小華',
-    teacherName: '張教授',
-    borrowerDepartment: '學生會',
-    teacherDepartment: '學務處',
-    borrowerEmail: 'chen@example.com',
-    teacherEmail: 'zhang@example.com',
-    borrowerPhone: '0987-654-321',
-    teacherPhone: '02-8765-4321',
-    rejectReason: '申請時間與其他活動衝突，請重新選擇時間段',
-  },
-  {
-    id: generateId(),
-    date: '2025.06.23',
-    room: 'G312',
-    time: '13:10 - 16:00',
-    status: '借用中',
-    action: '我要歸還',
-    eventName: '社團活動',
-    peopleCount: 25,
-    borrowType: '單次借用',
-    description: '社團幹部訓練活動',
-    borrowerName: '林小美',
-    teacherName: '劉教授',
-    borrowerDepartment: '社團聯合會',
-    teacherDepartment: '學務處',
-    borrowerEmail: 'lin@example.com',
-    teacherEmail: 'liu@example.com',
-    borrowerPhone: '0923-456-789',
-    teacherPhone: '02-2345-6789',
-  },
-  // 加入多次借用的範例資料
-  {
-    id: generateId(),
-    date: '2025.08.01 至 2025.12.31',
-    room: 'G509',
-    time: '09:10 - 12:00',
-    status: '審核中',
-    action: '取消申請',
-    eventName: '週會課程',
-    peopleCount: 35,
-    borrowType: '多次借用',
-    repeatType: '每周',
-    multiStartDate: '2025.08.01',
-    multiEndDate: '2025.12.31',
-    description: '每週定期課程教學',
-    borrowerName: '王助教',
-    teacherName: '李主任',
-    borrowerDepartment: '電子工程系',
-    teacherDepartment: '電子工程系',
-    borrowerEmail: 'wang.ta@example.com',
-    teacherEmail: 'lee.director@example.com',
-    borrowerPhone: '0922-333-444',
-    teacherPhone: '02-2222-3333',
-  },
-])
+// Format date from API (2025-11-05T00:00:00.000Z -> 2025.11.05)
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}.${month}.${day}`
+}
 
-// 待處理的管理員操作佇列（模擬後端處理）
-const adminQueue = reactive([])
+// Format time range
+const formatTimeRange = (startTime, endTime) => {
+  if (!startTime || !endTime) return ''
+  // Remove seconds if present (10:00:00 -> 10:00)
+  const start = startTime.slice(0, 5)
+  const end = endTime.slice(0, 5)
+  return `${start} - ${end}`
+}
+
+// Records array
+const records = reactive([])
+
+// Fetch records from API
+const fetchRecords = async () => {
+  const userId = userStore.userId.value
+  if (!userId) {
+    error.value = '請先登入'
+    return
+  }
+
+  isLoading.value = true
+  error.value = ''
+
+  try {
+    const response = await bookingsApi.getMyBookings(userId)
+    
+    // Clear existing records
+    records.splice(0, records.length)
+    
+    // Map API response to record format
+    const apiRecords = response.data || []
+    apiRecords.forEach((item) => {
+      const record = {
+        id: `BR${String(item.request_id).padStart(4, '0')}`,
+        request_id: item.request_id,
+        date: item.borrow_type === '多次借用' && item.end_date
+          ? `${formatDate(item.start_date)} 至 ${formatDate(item.end_date)}`
+          : formatDate(item.start_date),
+        room: item.classroom_id,
+        time: formatTimeRange(item.start_time, item.end_time),
+        status: item.status,
+        action: getAction(item.status),
+        eventName: item.event_name,
+        peopleCount: item.people_count,
+        borrowType: item.borrow_type,
+        description: item.reason,
+        borrowerName: '', // Not returned by API for own bookings
+        teacherName: item.teacher_name,
+        borrowerDepartment: item.borrower_department,
+        teacherDepartment: item.teacher_department,
+        borrowerEmail: item.borrower_email,
+        teacherEmail: item.teacher_email,
+        borrowerPhone: item.borrower_phone,
+        teacherPhone: item.teacher_phone,
+        rejectReason: item.reject_reason,
+        multiStartDate: item.borrow_type === '多次借用' ? formatDate(item.start_date) : null,
+        multiEndDate: item.borrow_type === '多次借用' ? formatDate(item.end_date) : null,
+      }
+      records.push(record)
+    })
+  } catch (err) {
+    console.error('獲取記錄失敗:', err)
+    if (err.response?.status === 401) {
+      error.value = '請先登入'
+    } else {
+      error.value = '獲取記錄失敗，請稍後再試'
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
 
 // 顯示詳細資訊
 const showDetails = (record) => {
@@ -136,44 +147,41 @@ const showReason = (record) => {
 }
 
 // 歸還操作
-const returnItem = (record) => {
+const returnItem = async (record) => {
   if (confirm(`確定要歸還 ${record.room} 的借用嗎？`)) {
-    // 加入管理員處理佇列
-    adminQueue.push({
-      type: 'return',
-      recordId: record.id,
-      timestamp: new Date().toISOString(),
-      data: { ...record },
-    })
+    try {
+      await bookingsApi.returnBooking(record.request_id)
+      
+      // 更新狀態
+      record.status = '已歸還'
+      record.action = ''
 
-    // 更新狀態
-    record.status = '確認歸還中'
-    record.action = ''
-
-    alert('歸還申請已送出，等待管理員確認')
-    console.log('管理員處理佇列:', adminQueue)
+      alert('歸還申請已送出')
+    } catch (err) {
+      console.error('歸還失敗:', err)
+      alert(err.response?.data?.message || '歸還失敗，請稍後再試')
+    }
   }
 }
 
 // 取消申請
-const cancelApplication = (record) => {
+const cancelApplication = async (record) => {
   if (confirm(`確定要取消 ${record.room} 的申請嗎？`)) {
-    // 加入管理員處理佇列
-    adminQueue.push({
-      type: 'cancel',
-      recordId: record.id,
-      timestamp: new Date().toISOString(),
-      data: { ...record },
-    })
+    try {
+      await bookingsApi.cancelBooking(record.request_id)
+      
+      // 從紀錄中移除或更新狀態
+      const index = records.findIndex((r) => r.id === record.id)
+      if (index > -1) {
+        records[index].status = '已取消'
+        records[index].action = ''
+      }
 
-    // 從紀錄中移除
-    const index = records.findIndex((r) => r.id === record.id)
-    if (index > -1) {
-      records.splice(index, 1)
+      alert('取消申請已送出')
+    } catch (err) {
+      console.error('取消失敗:', err)
+      alert(err.response?.data?.message || '取消失敗，請稍後再試')
     }
-
-    alert('取消申請已送出')
-    console.log('管理員處理佇列:', adminQueue)
   }
 }
 
@@ -185,60 +193,8 @@ const closeModal = () => {
 }
 
 onMounted(() => {
-  // 如果有從表單帶新資料 → 插入紀錄
-  if (route.query.date && route.query.room) {
-    // 單次借用的處理
-    const newRecord = {
-      id: generateId(),
-      date: route.query.date,
-      room: route.query.room,
-      time: route.query.time,
-      status: '審核中',
-      action: '取消申請',
-      eventName: route.query.eventName || '待補充',
-      peopleCount: route.query.peopleCount || '待補充',
-      borrowType: route.query.borrowType || '單次借用',
-      description: route.query.description || '待補充',
-      borrowerName: route.query.borrowerName || '待補充',
-      teacherName: route.query.teacherName || '待補充',
-      borrowerDepartment: route.query.borrowerDepartment || '待補充',
-      teacherDepartment: route.query.teacherDepartment || '待補充',
-      borrowerEmail: route.query.borrowerEmail || '待補充',
-      teacherEmail: route.query.teacherEmail || '待補充',
-      borrowerPhone: route.query.borrowerPhone || '待補充',
-      teacherPhone: route.query.teacherPhone || '待補充',
-    }
-    records.push(newRecord)
-  } else if (route.query.multiStartDate && route.query.multiEndDate && route.query.room) {
-    // 多次借用的處理
-    const newRecord = {
-      id: generateId(),
-      date: `${route.query.multiStartDate} 至 ${route.query.multiEndDate}`,
-      room: route.query.room,
-      time:
-        route.query.startTime && route.query.endTime
-          ? `${route.query.startTime.slice(0, 4)} - ${route.query.endTime.slice(5, 9)}`
-          : '待補充',
-      status: '審核中',
-      action: '取消申請',
-      eventName: route.query.eventName || '待補充',
-      peopleCount: route.query.peopleCount || '待補充',
-      borrowType: route.query.borrowType || '多次借用',
-      repeatType: route.query.repeatType || '待補充',
-      multiStartDate: route.query.multiStartDate,
-      multiEndDate: route.query.multiEndDate,
-      description: route.query.description || '待補充',
-      borrowerName: route.query.borrowerName || '待補充',
-      teacherName: route.query.teacherName || '待補充',
-      borrowerDepartment: route.query.borrowerDepartment || '待補充',
-      teacherDepartment: route.query.teacherDepartment || '待補充',
-      borrowerEmail: route.query.borrowerEmail || '待補充',
-      teacherEmail: route.query.teacherEmail || '待補充',
-      borrowerPhone: route.query.borrowerPhone || '待補充',
-      teacherPhone: route.query.teacherPhone || '待補充',
-    }
-    records.push(newRecord)
-  }
+  // Fetch records from API
+  fetchRecords()
 })
 </script>
 
