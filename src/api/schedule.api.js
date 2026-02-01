@@ -42,25 +42,14 @@ export const scheduleApi = {
    * @param {string} classroomId - Classroom ID
    * @returns {Promise} Response with combined schedule entries
    */
-  getClassroomScheduleRange: async (startDate, endDate, classroomId) => {
-    const start = new Date(startDate)
-    const end = new Date(endDate)
-    const promises = []
-
-    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
-      const dateStr = date.toISOString().split('T')[0]
-      promises.push(
-        apiClient.get('/bookings/schedule/', {
-          params: {
-            date: dateStr,
-            classroom_id: classroomId,
-          },
-        }),
-      )
-    }
-
-    const responses = await Promise.all(promises)
-    return responses.flatMap((res) => res.data)
+  getClassroomScheduleRange: (startDate, endDate, classroomId) => {
+    return apiClient.get('/bookings/schedule/', {
+      params: {
+        start_date: startDate,
+        end_date: endDate,
+        classroom_id: classroomId,
+      },
+    })
   },
 }
 
