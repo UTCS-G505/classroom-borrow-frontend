@@ -1,9 +1,14 @@
 <script setup>
 import { reactive, onMounted, ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { bookingsApi } from '@/api/bookings.api'
 import { useUserStore } from '@/stores/user'
+import { useAuthStore } from '@/stores/auth'
 
+const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
+const authStore = useAuthStore()
 
 // 控制彈出視窗的顯示
 const showDetailModal = ref(false)
@@ -72,9 +77,17 @@ const records = reactive([])
 
 // Fetch records from API
 const fetchRecords = async () => {
+  if (!authStore.isLoggedIn.value) {
+    router.push({
+      path: '/login',
+      query: { redirect: route.fullPath },
+    })
+    return
+  }
+
   const userId = userStore.userId.value
   if (!userId) {
-    error.value = '請先登入'
+    error.value = '無法取得用戶資訊'
     return
   }
 

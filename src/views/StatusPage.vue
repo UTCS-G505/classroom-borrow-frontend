@@ -2,8 +2,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { scheduleApi } from '@/api/schedule.api'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const classrooms = [
   { id: 'G312', title: 'G312 會議室' },
@@ -226,15 +228,30 @@ function handleConfirm() {
   const fmtStart = firstSlot.replace(/:/g, '')
   const fmtEnd = lastSlot.replace(/:/g, '')
 
+  const targetQuery = {
+    roomId: selectedRoom.value,
+    date: selectionState.value.dateKey,
+    startTime: fmtStart,
+    endTime: fmtEnd,
+    borrowType: '單次借用',
+  }
+
+  if (!authStore.isLoggedIn) {
+    const targetFullPath = router.resolve({
+      path: '/borrow',
+      query: targetQuery,
+    }).fullPath
+
+    router.push({
+      path: '/login',
+      query: { redirect: targetFullPath },
+    })
+    return
+  }
+
   router.push({
     path: '/borrow',
-    query: {
-      roomId: selectedRoom.value,
-      date: selectionState.value.dateKey,
-      startTime: fmtStart, // 傳送格式化後的完整時段字串
-      endTime: fmtEnd, // 傳送格式化後的完整時段字串
-      borrowType: '單次借用',
-    },
+    query: targetQuery,
   })
 }
 
