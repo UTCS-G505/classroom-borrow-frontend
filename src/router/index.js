@@ -4,6 +4,7 @@ import BorrowRequestView from '../views/BorrowRequestView.vue'
 import introductionPage from '../views/introductionPage.vue'
 import HomePage from '../views/HomePage.vue'
 import recordsView from '../views/recordsView.vue'
+import AdminDashboard from '../views/AdminDashboard.vue'
 import LoginView from '../views/LoginView.vue'
 import StatusPage from '../views/StatusPage.vue'
 import TeacherSignOff from '../views/TeacherSignOff.vue'
@@ -34,6 +35,11 @@ const routes = [
     path: '/record', // 借用紀錄
     name: 'RecordsView',
     component: recordsView,
+  },
+  {
+    path: '/admin', // 借用管理頁面
+    name: 'AdminDashboard',
+    component: AdminDashboard,
   },
   {
     path: '/login', // 登入頁
