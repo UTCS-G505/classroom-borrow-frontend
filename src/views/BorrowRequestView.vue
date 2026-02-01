@@ -411,7 +411,7 @@ const autoFillBorrowerInfo = () => {
     }
     if (!form.borrowerDepartment) {
       form.borrowerDepartment =
-        userStore.role && 0 <= userStore.role && userStore.role <= 4 ? '資科系' : ''
+        userStore.role && 0 <= userStore.role.value && userStore.role.value <= 4 ? '資科系' : ''
     }
   }
 }
