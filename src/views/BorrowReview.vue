@@ -1,118 +1,81 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useToastStore } from '@/stores/toast'
+import adminApi from '../api/admin.api.js'
 
+const toastStore = useToastStore()
 const emit = defineEmits(['addBlacklist'])
 
 const applications = ref([])
+const isLoading = ref(true)
 
-// 初始化：從 localStorage 載入
-onMounted(() => {
-  const saved = localStorage.getItem('applications')
-  if (saved) {
-    applications.value = JSON.parse(saved)
-  } else {
-    applications.value = [
-      {
-        applicant: '王XX',
-        classroom: 'G508',
-        date: '2025/07/30',
-        startTime: '12:00',
-        endTime: '15:00',
-        status: '審核中',
-        reason: '',
-        borrowType: '單次借用',
-        eventName: '程式設計課程',
-        peopleCount: 20,
-        description: '課程教學',
-        teacherName: '李教授',
-        borrowerDepartment: '資訊工程系',
-        teacherDepartment: '資訊工程系',
-        borrowerEmail: 'wang@example.com',
-        teacherEmail: 'li@example.com',
-        borrowerPhone: '0912-345-678',
-        teacherPhone: '02-1234-5678',
-      },
-      {
-        applicant: '陳XX',
-        classroom: 'G516',
-        date: '2025/07/31',
-        startTime: '10:00',
-        endTime: '12:00',
-        status: '審核中',
-        reason: '',
-        borrowType: '單次借用',
-        eventName: '學生會會議',
-        peopleCount: 15,
-        description: '學生會討論活動',
-        teacherName: '張教授',
-        borrowerDepartment: '學生會',
-        teacherDepartment: '學務處',
-        borrowerEmail: 'chen@example.com',
-        teacherEmail: 'zhang@example.com',
-        borrowerPhone: '0987-654-321',
-        teacherPhone: '02-8765-4321',
-      },
-      {
-        applicant: '張XX',
-        classroom: 'G316',
-        date: '2025/08/10',
-        startTime: '14:00',
-        endTime: '15:00',
-        status: '審核中',
-        reason: '',
-        borrowType: '單次借用',
-        eventName: '社團活動',
-        peopleCount: 25,
-        description: '社團幹部訓練活動',
-        teacherName: '劉教授',
-        borrowerDepartment: '學務處',
-        teacherDepartment: '學務處',
-        borrowerEmail: 'zhang@example.com',
-        teacherEmail: 'liu@example.com',
-        borrowerPhone: '0923-456-789',
-        teacherPhone: '02-2345-6789',
-      },
-      {
-        applicant: '林XX',
-        classroom: 'G316',
-        date: '2025/08/10 至 2025/12/31',
-        multiStartDate: '2025.08.10',
-        multiEndDate: '2025.12.31',
-        startTime: '14:00',
-        endTime: '15:00',
-        status: '審核中',
-        reason: '',
-        borrowType: '多次借用',
-        eventName: '週會課程',
-        repeatType: '每周',
-        peopleCount: 25,
-        description: '每週定期課程教學',
-        teacherName: '李教授',
-        borrowerDepartment: '資訊科學系',
-        teacherDepartment: '資訊科學系',
-        borrowerEmail: 'zhang@example.com',
-        teacherEmail: 'liu@example.com',
-        borrowerPhone: '0923-456-789',
-        teacherPhone: '02-2345-6789',
-      },
-    ]
+// Fetch bookings from backend
+async function fetchBookings() {
+  isLoading.value = true
+  try {
+    const response = await adminApi.getAllBookings()
+    applications.value = response.data.map((item) => ({
+      // Map backend fields to frontend display
+      request_id: item.request_id,
+      user_id: item.user_id,
+      applicant: item.borrower_email?.split('@')[0] || '未知',
+      classroom: item.classroom_id,
+      date:
+        item.borrow_type === '多次借用' && item.end_date
+          ? `${formatDate(item.start_date)} 至 ${formatDate(item.end_date)}`
+          : formatDate(item.start_date),
+      multiStartDate: formatDate(item.start_date),
+      multiEndDate: item.end_date ? formatDate(item.end_date) : null,
+      startTime: formatTime(item.start_time),
+      endTime: formatTime(item.end_time),
+      status: item.status,
+      reason: item.reject_reason || '',
+      borrowType: item.borrow_type,
+      eventName: item.event_name,
+      peopleCount: item.people_count,
+      description: item.reason,
+      teacherName: item.teacher_name,
+      borrowerDepartment: item.borrower_department,
+      teacherDepartment: item.teacher_department,
+      borrowerEmail: item.borrower_email,
+      teacherEmail: item.teacher_email,
+      borrowerPhone: item.borrower_phone,
+      teacherPhone: item.teacher_phone,
+    }))
+  } catch (error) {
+    console.error('Failed to fetch bookings:', error)
+    toastStore.showToast('無法載入借用申請資料', 'error')
+  } finally {
+    isLoading.value = false
   }
-})
+}
 
-// 監聽 → 儲存
-watch(
-  applications,
-  (val) => {
-    localStorage.setItem('applications', JSON.stringify(val))
-  },
-  { deep: true },
-)
+// Format date from backend
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}/${month}/${day}`
+}
+
+// Format time from backend (HH:MM:SS -> HH:MM)
+function formatTime(timeStr) {
+  if (!timeStr) return ''
+  return timeStr.substring(0, 5)
+}
+
+onMounted(() => {
+  fetchBookings()
+})
 
 // ---------- 彈窗控制區 ----------
 const showModal = ref(false) // 控制彈窗是否顯示
 const currentAction = ref('') //denied或blacklist
 const currentApplication = ref(null)
 const inputReason = ref('') // 使用者輸入的理由
+const isSubmitting = ref(false)
 
 // 打開彈窗，傳入動作和申請索引
 function openModal(action, application) {
@@ -123,13 +86,42 @@ function openModal(action, application) {
 }
 
 // 按下確認 → 更新申請的狀態與理由
-function submitReason() {
-  if (currentApplication.value) {
-    const app = currentApplication.value
-    app.status = currentAction.value === 'denied' ? '駁回' : '黑名單'
-    app.reason = inputReason.value // 紀錄理由
+async function submitReason() {
+  if (!currentApplication.value) return
 
-    if (currentAction.value === 'blacklist') {
+  isSubmitting.value = true
+  const app = currentApplication.value
+
+  try {
+    if (currentAction.value === 'denied') {
+      // Reject the booking
+      await adminApi.updateBookingStatus(app.request_id, {
+        status: 'rejected',
+        reject_reason: inputReason.value,
+      })
+      app.status = '退件'
+      app.reason = inputReason.value
+      toastStore.showToast('已駁回申請', 'success')
+    } else if (currentAction.value === 'blacklist') {
+      // Reject and add to blacklist
+      await adminApi.updateBookingStatus(app.request_id, {
+        status: 'rejected',
+        reject_reason: inputReason.value,
+      })
+
+      // Add to blacklist with 1 year expiration
+      const expiredAt = new Date()
+      expiredAt.setFullYear(expiredAt.getFullYear() + 1)
+      await adminApi.addToBlacklist({
+        user_id: app.user_id,
+        reason: inputReason.value,
+        expired_at: expiredAt.toISOString().split('T')[0],
+      })
+
+      app.status = '退件'
+      app.reason = inputReason.value
+      toastStore.showToast('已加入黑名單', 'success')
+
       emit('addBlacklist', {
         applicant: app.applicant,
         classroom: app.classroom,
@@ -137,24 +129,37 @@ function submitReason() {
         reason: inputReason.value,
       })
     }
+  } catch (error) {
+    console.error('Failed to update booking:', error)
+    toastStore.showToast('操作失敗: ' + (error.response?.data?.error || '未知錯誤'), 'error')
+  } finally {
+    isSubmitting.value = false
+    showModal.value = false
   }
-  showModal.value = false // 關閉視窗
 }
 
 // ---------- 核准申請 ----------
-// 將申請狀態改為 "已核准"
-function approve(application) {
-  application.status = '已核准'
-  application.reason = ''
+async function approve(application) {
+  try {
+    await adminApi.updateBookingStatus(application.request_id, {
+      status: 'approved',
+    })
+    application.status = '核准'
+    application.reason = ''
+    toastStore.showToast('已核准申請', 'success')
+  } catch (error) {
+    console.error('Failed to approve booking:', error)
+    toastStore.showToast('核准失敗: ' + (error.response?.data?.error || '未知錯誤'), 'error')
+  }
 }
 
 // 區分待審核 / 已完成
 const pendingApplications = computed(() =>
-  applications.value.filter((item) => item.status === '審核中'),
+  applications.value.filter((item) => item.status === '審核中' || item.status === '教師核准'),
 )
 
 const reviewedApplications = computed(() =>
-  applications.value.filter((item) => item.status !== '審核中'),
+  applications.value.filter((item) => item.status !== '審核中' && item.status !== '教師核准'),
 )
 
 // ---------- 統計資料 ----------
@@ -162,10 +167,9 @@ const reviewedApplications = computed(() =>
 const stats = computed(() => {
   const total = applications.value.length //總申請數
   const pending = pendingApplications.value.length //審核中數量
-  const approved = applications.value.filter((item) => item.status == '已核准').length //已審核數量
-  const disallowed = applications.value.filter((item) => item.status == '駁回').length //駁回數量
-  const blacklist = applications.value.filter((item) => item.status == '黑名單').length //黑名單數量
-  return { total, pending, approved, disallowed, blacklist }
+  const approved = applications.value.filter((item) => item.status == '核准').length //已審核數量
+  const disallowed = applications.value.filter((item) => item.status == '退件').length //駁回數量
+  return { total, pending, approved, disallowed }
 })
 
 //詳細資訊彈窗
@@ -185,96 +189,99 @@ function closeModal() {
 </script>
 
 <template>
-  <!-- ---------- 當日借用統計 ---------- -->
-  <section class="stats">
-    <h3>今日借用統計</h3>
+  <!-- Loading State -->
+  <div v-if="isLoading" class="loading">
+    <p>載入中...</p>
+  </div>
 
-    <div class="data">
-      <span
-        >總借用：<strong>{{ stats.total }}</strong></span
-      >
-      <span class="divider">|</span>
-      <span
-        >審核中：<strong>{{ stats.pending }}</strong></span
-      >
-      <span class="divider">|</span>
-      <span
-        >已核准：<strong>{{ stats.approved }}</strong></span
-      >
-      <span class="divider">|</span>
-      <span
-        >駁回：<strong>{{ stats.disallowed }}</strong></span
-      >
-      <span class="divider">|</span>
-      <span
-        >黑名單：<strong>{{ stats.blacklist }}</strong></span
-      >
-    </div>
-  </section>
+  <template v-else>
+    <!-- ---------- 當日借用統計 ---------- -->
+    <section class="stats">
+      <h3>借用統計</h3>
 
-  <!-- ---------- 待審核申請列表 ---------- -->
-  <section class="review">
-    <h3>待審核申請</h3>
-    <table v-if="pendingApplications.length">
-      <thead>
-        <tr>
-          <th>申請人</th>
-          <th>教室</th>
-          <th>時間</th>
-          <th>用途</th>
-          <th>狀態</th>
-          <th>操作</th>
-        </tr>
-      </thead>
+      <div class="data">
+        <span
+          >總借用：<strong>{{ stats.total }}</strong></span
+        >
+        <span class="divider">|</span>
+        <span
+          >審核中：<strong>{{ stats.pending }}</strong></span
+        >
+        <span class="divider">|</span>
+        <span
+          >已核准：<strong>{{ stats.approved }}</strong></span
+        >
+        <span class="divider">|</span>
+        <span
+          >駁回：<strong>{{ stats.disallowed }}</strong></span
+        >
+      </div>
+    </section>
 
-      <tbody>
-        <!-- 逐筆顯示申請資料 -->
-        <tr v-for="(item, index) in pendingApplications" :key="index">
-          <td>{{ item.applicant }}</td>
-          <td>{{ item.classroom }}</td>
-          <td>{{ item.date }} {{ item.startTime }} - {{ item.endTime }}</td>
-          <td><button class="purpose" @click="openDetail(item)">詳細資訊</button></td>
-          <td>
-            <!-- 顯示當前狀態 -->
-            <span>{{ item.status }}</span>
-          </td>
-          <td>
-            <!-- 操作按鈕 -->
-            <button class="approve" @click="approve(item)">核准</button>
-            <button class="denied" @click="openModal('denied', item)">駁回</button>
-            <button class="blacklist" @click="openModal('blacklist', item)">加入黑名單</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <p v-else>目前沒有待審核的申請</p>
-  </section>
+    <!-- ---------- 待審核申請列表 ---------- -->
+    <section class="review">
+      <h3>待審核申請</h3>
+      <table v-if="pendingApplications.length">
+        <thead>
+          <tr>
+            <th>申請人</th>
+            <th>教室</th>
+            <th>時間</th>
+            <th>用途</th>
+            <th>狀態</th>
+            <th>操作</th>
+          </tr>
+        </thead>
 
-  <!-- 已完成審核 -->
-  <section class="reviewed">
-    <h3>已完成審核</h3>
-    <table v-if="reviewedApplications.length">
-      <thead>
-        <tr>
-          <th>申請人</th>
-          <th>教室</th>
-          <th>時間</th>
-          <th>狀態</th>
-          <th>備註</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(item, index) in reviewedApplications" :key="index">
-          <td>{{ item.applicant }}</td>
-          <td>{{ item.classroom }}</td>
-          <td>{{ item.date }} {{ item.startTime }} - {{ item.endTime }}</td>
-          <td>{{ item.status }}</td>
-          <td>{{ item.reason || '-' }}</td>
-        </tr>
-      </tbody>
-    </table>
-    <p v-else>目前沒有已完成審核的資料。</p>
-  </section>
+        <tbody>
+          <!-- 逐筆顯示申請資料 -->
+          <tr v-for="item in pendingApplications" :key="item.request_id">
+            <td>{{ item.applicant }}</td>
+            <td>{{ item.classroom }}</td>
+            <td>{{ item.date }} {{ item.startTime }} - {{ item.endTime }}</td>
+            <td><button class="purpose" @click="openDetail(item)">詳細資訊</button></td>
+            <td>
+              <!-- 顯示當前狀態 -->
+              <span>{{ item.status }}</span>
+            </td>
+            <td>
+              <!-- 操作按鈕 -->
+              <button class="approve" @click="approve(item)">核准</button>
+              <button class="denied" @click="openModal('denied', item)">駁回</button>
+              <button class="blacklist" @click="openModal('blacklist', item)">加入黑名單</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else>目前沒有待審核的申請</p>
+    </section>
+
+    <!-- 已完成審核 -->
+    <section class="reviewed">
+      <h3>已完成審核</h3>
+      <table v-if="reviewedApplications.length">
+        <thead>
+          <tr>
+            <th>申請人</th>
+            <th>教室</th>
+            <th>時間</th>
+            <th>狀態</th>
+            <th>備註</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in reviewedApplications" :key="item.request_id">
+            <td>{{ item.applicant }}</td>
+            <td>{{ item.classroom }}</td>
+            <td>{{ item.date }} {{ item.startTime }} - {{ item.endTime }}</td>
+            <td>{{ item.status }}</td>
+            <td>{{ item.reason || '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else>目前沒有已完成審核的資料。</p>
+    </section>
+  </template>
 
   <!-- 駁回 / 黑名單理由彈窗 -->
   <div v-if="showModal" class="modalOverlay">
@@ -287,8 +294,10 @@ function closeModal() {
 
       <!-- 彈窗按鈕區 -->
       <div class="modalButtons">
-        <button @click="submitReason">確認</button>
-        <button @click="showModal = false">取消</button>
+        <button @click="submitReason" :disabled="isSubmitting">
+          {{ isSubmitting ? '處理中...' : '確認' }}
+        </button>
+        <button @click="showModal = false" :disabled="isSubmitting">取消</button>
       </div>
     </div>
   </div>
@@ -401,6 +410,13 @@ function closeModal() {
 </template>
 
 <style scoped>
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+  color: #666;
+}
+
 .stats,
 .review,
 .reviewed {
@@ -458,6 +474,11 @@ button {
   color: #fff;
   cursor: pointer;
   margin-right: 5px;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* 核准按鈕 */

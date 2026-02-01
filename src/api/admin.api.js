@@ -2,7 +2,7 @@ import apiClient from './axios'
 
 /**
  * Admin API Module
- * Handles admin-only API calls for managing bookings, announcements, and blacklist
+ * Handles admin-only API calls for managing bookings and blacklist
  */
 export const adminApi = {
   // ===== Booking Management =====
@@ -27,21 +27,15 @@ export const adminApi = {
     return apiClient.put(`/admin/bookings/${id}/status`, statusData)
   },
 
-  // ===== Announcement Management =====
+  // ===== Blacklist Management =====
 
   /**
-   * Create a new announcement (admin only)
-   * @param {Object} announcementData - Announcement data
-   * @param {string} announcementData.title - Announcement title
-   * @param {string} announcementData.content - Announcement content
-   * @param {string} [announcementData.expired_at] - Expiration date (YYYY-MM-DD)
-   * @returns {Promise} Response with message and request_id
+   * Get all blacklist entries (admin only)
+   * @returns {Promise} Response with array of blacklist entries
    */
-  createAnnouncement: (announcementData) => {
-    return apiClient.post('/admin/announcements', announcementData)
+  getAllBlacklist: () => {
+    return apiClient.get('/admin/blacklist')
   },
-
-  // ===== Blacklist Management =====
 
   /**
    * Add a user to the blacklist (admin only)

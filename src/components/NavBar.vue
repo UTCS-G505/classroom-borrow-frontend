@@ -5,18 +5,29 @@ import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import logo from '@/assets/logo.png'
 
+import { computed } from 'vue'
+
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const userStore = useUserStore()
 
-const links = [
-  { to: '/home', label: '首頁' },
-  { to: '/borrow_status', label: '教室借用情況' },
-  { to: '/introduction', label: '教室介紹' },
-  { to: '/borrow', label: '申請借用' },
-  { to: '/record', label: '借用紀錄' },
-]
+const links = computed(() => {
+  const items = [
+    { to: '/home', label: '首頁' },
+    { to: '/borrow_status', label: '教室借用情況' },
+    { to: '/introduction', label: '教室介紹' },
+    { to: '/borrow', label: '申請借用' },
+    { to: '/record', label: '借用紀錄' },
+  ]
+
+  const role = userStore.role.value
+  console.log(role)
+  if (role <= 1) {
+    items.push({ to: '/admin', label: '借用管理' })
+  }
+  return items
+})
 
 const isMobileMenuOpen = ref(false)
 const isScrolled = ref(false)

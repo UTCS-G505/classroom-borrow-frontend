@@ -1,20 +1,11 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref } from 'vue'
 
 import BorrowReview from './BorrowReview.vue'
-import AnnouncementManagement from './AnnouncementManagement.vue'
 import BlacklistPage from './BlacklistPage.vue'
-
-onMounted(() => {
-  const saved = localStorage.getItem('blacklist')
-  if (saved) {
-    blacklist.value = JSON.parse(saved)
-  }
-})
 
 const links = [
   { label: '借用審核', id: 'borrow-review' },
-  { label: '公告管理', id: 'announcement' },
   { label: '違規(黑名單)', id: 'blacklist-management' },
 ]
 
@@ -25,28 +16,6 @@ const page = ref('borrow-review')
 function changePage(id) {
   page.value = id
 }
-
-//黑名單資料
-const blacklist = ref([])
-
-// 監聽變動 → 儲存到 localStorage
-watch(
-  blacklist,
-  (val) => {
-    localStorage.setItem('blacklist', JSON.stringify(val))
-  },
-  { deep: true },
-)
-
-//新增黑名單
-function handleAddBlacklist(entry) {
-  blacklist.value.push(entry)
-}
-
-//刪除黑名單
-function handleDeleteBlacklist(index) {
-  blacklist.value.splice(index, 1)
-}
 </script>
 
 <template>
@@ -56,11 +25,7 @@ function handleDeleteBlacklist(index) {
       <h2 class="sidebarTitle">管理員選單</h2>
       <ul>
         <li v-for="link in links" :key="link.id">
-          <span
-            :class="{ current: page.value === link.id }"
-            @click="changePage(link.id)"
-            class="navLink"
-          >
+          <span :class="{ current: page === link.id }" @click="changePage(link.id)" class="navLink">
             {{ link.label }}
           </span>
         </li>
@@ -69,13 +34,8 @@ function handleDeleteBlacklist(index) {
 
     <!-- 主內容區 -->
     <section class="content">
-      <BorrowReview v-if="page === 'borrow-review'" @addBlacklist="handleAddBlacklist" />
-      <AnnouncementManagement v-else-if="page === 'announcement'" />
-      <BlacklistPage
-        v-else-if="page === 'blacklist-management'"
-        :blacklist="blacklist"
-        @deleteBlacklist="handleDeleteBlacklist"
-      />
+      <BorrowReview v-if="page === 'borrow-review'" />
+      <BlacklistPage v-else-if="page === 'blacklist-management'" />
     </section>
   </div>
 </template>
@@ -120,6 +80,10 @@ function handleDeleteBlacklist(index) {
 }
 
 .navLink:hover {
+  background-color: #777;
+}
+
+.navLink.current {
   background-color: #777;
 }
 
