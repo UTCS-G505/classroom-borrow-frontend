@@ -26,14 +26,13 @@ const statusClass = (status) => {
       return 'status-gray'
     case '駁回':
     case '退件':
+    case '已取消':
       return 'status-red'
     case '借用中':
-    case '已核准':
+    case '核准':
       return 'status-green'
     case '審核中':
-      return 'status-blue'
-    case '已取消':
-      return 'status-gray'
+      return 'status-yellow'
     default:
       return 'status-gray'
   }
@@ -532,9 +531,9 @@ h1 {
   background-color: #d1eddd;
   color: #155724;
 }
-.status-blue {
-  background-color: #d1ecf1;
-  color: #0c5460;
+.status-yellow {
+  background-color: #fff3cd;
+  color: #856404;
 }
 
 /* 按鈕樣式 */
