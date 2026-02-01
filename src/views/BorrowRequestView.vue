@@ -244,12 +244,17 @@ const prevStage = () => {
   }
 }
 
+// -------------------------------------------------------------------
+// 👇 修改後的 submitForm 函式 (串接後端寄信)
+// -------------------------------------------------------------------
 const submitForm = async () => {
+  // 1. 驗證表單
   if (!validateStage3()) {
     alert('請修正表單中的錯誤！')
     return
   }
 
+<<<<<<< HEAD
   if (isSubmitting.value) return
   isSubmitting.value = true
 
@@ -414,7 +419,6 @@ const autoFillBorrowerInfo = () => {
     <h1 style="padding: 0px 0px 0px 10px">借用申請</h1>
     <hr />
 
-    <!-- 階段指示器 -->
     <div class="stage-indicator">
       <div class="stage-item" :class="{ active: currentStage === 1, completed: currentStage > 1 }">
         <div class="stage-number">1</div>
@@ -432,12 +436,10 @@ const autoFillBorrowerInfo = () => {
       </div>
     </div>
 
-    <!-- 階段 1: 基本借用資訊 -->
     <div v-if="currentStage === 1" class="form-container">
       <h1>基本借用資訊</h1>
       <hr style="width: 96%; margin: 0 auto" />
 
-      <!-- 選擇教室 & 活動人數 -->
       <div class="row">
         <div class="field">
           <label>選擇教室</label>
@@ -472,7 +474,6 @@ const autoFillBorrowerInfo = () => {
         </div>
       </div>
 
-      <!-- 借用類型 -->
       <div class="row">
         <div class="field">
           <label>借用類型</label>
@@ -500,7 +501,6 @@ const autoFillBorrowerInfo = () => {
         </div>
       </div>
 
-      <!-- 顯示多次借用的額外選項 -->
       <div v-if="form.borrowType === '多次借用'" class="row">
         <div class="field">
           <label>頻率</label>
@@ -539,9 +539,7 @@ const autoFillBorrowerInfo = () => {
         </div>
       </div>
 
-      <!-- 日期 & 時間 -->
       <div class="row">
-        <!-- 單次借用時顯示選擇日期 -->
         <div class="field" v-if="form.borrowType !== '多次借用'">
           <label>選擇日期</label>
           <input
@@ -553,7 +551,6 @@ const autoFillBorrowerInfo = () => {
           <span class="error" v-if="errors.date">{{ errors.date }}</span>
         </div>
 
-        <!-- 活動時間 -->
         <div class="field">
           <label>活動時間(起)</label>
           <select
@@ -607,12 +604,10 @@ const autoFillBorrowerInfo = () => {
       </div>
     </div>
 
-    <!-- 階段 2: 活動資訊 -->
     <div v-if="currentStage === 2" class="form-container">
       <h1>活動資訊</h1>
       <hr style="width: 96%; margin: 0 auto" />
 
-      <!-- 活動名稱 -->
       <div class="field">
         <label>活動名稱</label>
         <input
@@ -623,7 +618,6 @@ const autoFillBorrowerInfo = () => {
         <span class="error" v-if="errors.eventName">{{ errors.eventName }}</span>
       </div>
 
-      <!-- 活動內容 -->
       <div class="field">
         <label>活動內容說明</label>
         <textarea
@@ -635,12 +629,10 @@ const autoFillBorrowerInfo = () => {
       </div>
     </div>
 
-    <!-- 階段 3: 聯絡資訊 -->
     <div v-if="currentStage === 3" class="form-container">
       <h1>聯絡資訊</h1>
       <hr style="width: 96%; margin: 0 auto" />
 
-      <!-- 借用人姓名 & 指導老師姓名 -->
       <div class="row">
         <div class="field">
           <label>借用人姓名</label>
@@ -663,7 +655,6 @@ const autoFillBorrowerInfo = () => {
         </div>
       </div>
 
-      <!-- 借用人系級/服務單位 & 指導老師系所(單位) -->
       <div class="row">
         <div class="field">
           <label>借用人系級/服務單位</label>
@@ -687,7 +678,6 @@ const autoFillBorrowerInfo = () => {
         </div>
       </div>
 
-      <!-- 借用人Email & 指導老師Email -->
       <div class="row">
         <div class="field">
           <label>借用人Email</label>
@@ -709,7 +699,6 @@ const autoFillBorrowerInfo = () => {
         </div>
       </div>
 
-      <!-- 借用人聯絡電話 & 指導老師連絡電話 -->
       <div class="row">
         <div class="field">
           <label>借用人聯絡電話</label>
@@ -732,7 +721,6 @@ const autoFillBorrowerInfo = () => {
       </div>
     </div>
 
-    <!-- 導航按鈕 -->
     <div class="navigation-buttons">
       <button v-if="currentStage > 1" @click="prevStage" class="btn-prev">上一步</button>
       <button v-if="currentStage < 3" @click="nextStage" class="btn-next">下一步</button>

@@ -5,16 +5,18 @@ import introductionPage from '../views/introductionPage.vue'
 import HomePage from '../views/HomePage.vue'
 import recordsView from '../views/recordsView.vue'
 import LoginView from '../views/LoginView.vue'
-import StatusPage from '../views/StatusPage.vue'
+// 👇 1. 引入剛剛建立的簽核頁面 (請確認你的檔案路徑是否在 views 資料夾)
+import TeacherSignOff from '../views/TeacherSignOff.vue'
+import TASignOff from '../views/TASignOff.vue'
 
 const routes = [
   {
-    path: '/borrow', // 你的網址
+    path: '/borrow', // 借用申請頁
     name: 'BorrowRequest',
     component: BorrowRequestView,
   },
   {
-    path: '/introduction', // 你的網址
+    path: '/introduction', // 介紹頁
     name: 'introductionPage',
     component: introductionPage,
   },
@@ -34,14 +36,20 @@ const routes = [
     component: recordsView,
   },
   {
-    path: '/login', // 你的網址
+    path: '/login', // 登入頁
     name: 'LoginView',
     component: LoginView,
   },
+  // 👇 2. 新增老師簽核頁面的路由
   {
-    path: '/borrow_status', // 教室使用情況
-    name: 'StatusPage',
-    component: StatusPage,
+    path: '/teacher-signoff', // 對應 Email 連結中的路徑
+    name: 'TeacherSignOff',
+    component: TeacherSignOff,
+  },
+  {
+    path: '/ta-signoff',
+    name: 'TASignOff',
+    component: TASignOff,
   },
 ]
 
