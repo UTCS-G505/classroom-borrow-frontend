@@ -47,15 +47,15 @@ const selectionState = ref({
   indices: [],
 })
 
-function getWeekDates(weekOffset = 0) {
+function getWeekDates(dayOffset = 0) {
   const today = new Date()
-  const currentDay = today.getDay()
-  const diff = today.getDate() - currentDay + weekOffset * 7
-  const sunday = new Date(today.setDate(diff))
+  today.setHours(0, 0, 0, 0) // Reset to start of day
+  const startDate = new Date(today)
+  startDate.setDate(today.getDate() + dayOffset * 7) // Offset by weeks (7 days)
   const dates = []
   for (let i = 0; i < 7; i++) {
-    const date = new Date(sunday)
-    date.setDate(sunday.getDate() + i)
+    const date = new Date(startDate)
+    date.setDate(startDate.getDate() + i)
     dates.push(date)
   }
   return dates
@@ -333,7 +333,7 @@ function selectRoom(id) {
                   :key="idx"
                   :class="{ todayColumn: getDateKey(date) === todayKey }"
                 >
-                  <div>{{ weekDays[idx] }}</div>
+                  <div>{{ weekDays[date.getDay()] }}</div>
                   <div class="dateText">{{ formatDate(date) }}</div>
                 </th>
                 <th class="arrowCell">
