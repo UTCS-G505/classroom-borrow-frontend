@@ -48,7 +48,6 @@ export const bookingsApi = {
    * @returns {Promise} Response with message and request_id
    */
   createBooking: (bookingData) => {
-    console.log('Creating booking with data:', bookingData)
     return apiClient.post('/bookings/', bookingData)
   },
 

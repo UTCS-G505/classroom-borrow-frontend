@@ -55,7 +55,6 @@ async function fetchBookingData() {
 
     if (data.status === 200) {
       requestData.value = data.data[0]
-      console.log('requestData.value', requestData.value)
     } else {
       alert('找不到資料')
     }

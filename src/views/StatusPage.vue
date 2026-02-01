@@ -94,8 +94,6 @@ async function fetchSchedule(classroomId = selectedRoom.value) {
     const response = await scheduleApi.getClassroomScheduleRange(startDate, endDate, classroomId)
     const data = response.data || []
 
-    console.log(data)
-
     // Transform data to { roomId: { date: { timeSlot: eventName } } }
     const transformedData = {}
 
