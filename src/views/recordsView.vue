@@ -15,9 +15,15 @@ const toastStore = useToastStore()
 // 控制彈出視窗的顯示
 const showDetailModal = ref(false)
 const showReasonModal = ref(false)
+const showConfirmModal = ref(false)
 const currentRecord = ref({})
 const isLoading = ref(false)
 const error = ref('')
+
+// Confirm Modal State
+const confirmType = ref('') // 'return' or 'cancel'
+const confirmRecord = ref(null)
+const isProcessing = ref(false)
 
 // 狀態樣式分類函數
 const statusClass = (status) => {
@@ -149,42 +155,80 @@ const showReason = (record) => {
   showReasonModal.value = true
 }
 
+// 開啟確認視窗
+const openConfirmModal = (type, record) => {
+  confirmType.value = type
+  confirmRecord.value = record
+  showConfirmModal.value = true
+}
+
+// 關閉確認視窗
+const closeConfirmModal = () => {
+  showConfirmModal.value = false
+  confirmType.value = ''
+  confirmRecord.value = null
+}
+
+// 確認操作
+const handleConfirm = async () => {
+  if (!confirmRecord.value) return
+
+  if (confirmType.value === 'return') {
+    await processReturn(confirmRecord.value)
+  } else if (confirmType.value === 'cancel') {
+    await processCancel(confirmRecord.value)
+  }
+  closeConfirmModal()
+}
+
 // 歸還操作
-const returnItem = async (record) => {
-  if (confirm(`確定要歸還 ${record.room} 的借用嗎？`)) {
-    try {
-      await bookingsApi.returnBooking(record.request_id)
+const returnItem = (record) => {
+  openConfirmModal('return', record)
+}
 
-      // 更新狀態
-      record.status = '已歸還'
-      record.action = ''
+// 實際執行歸還
+const processReturn = async (record) => {
+  isProcessing.value = true
+  try {
+    await bookingsApi.returnBooking(record.request_id)
 
-      toastStore.showToast('歸還申請已送出', 'success')
-    } catch (err) {
-      console.error('歸還失敗:', err)
-      toastStore.showToast(err.response?.data?.message || '歸還失敗，請稍後再試', 'error')
-    }
+    // 更新狀態
+    record.status = '已歸還'
+    record.action = ''
+
+    toastStore.showToast('歸還申請已送出', 'success')
+  } catch (err) {
+    console.error('歸還失敗:', err)
+    toastStore.showToast(err.response?.data?.message || '歸還失敗，請稍後再試', 'error')
+  } finally {
+    isProcessing.value = false
   }
 }
 
 // 取消申請
-const cancelApplication = async (record) => {
-  if (confirm(`確定要取消 ${record.room} 的申請嗎？`)) {
-    try {
-      await bookingsApi.cancelBooking(record.request_id)
+const cancelApplication = (record) => {
+  openConfirmModal('cancel', record)
+}
 
-      // 從紀錄中移除或更新狀態
-      const index = records.findIndex((r) => r.id === record.id)
-      if (index > -1) {
-        records[index].status = '已取消'
-        records[index].action = ''
-      }
+// 實際執行取消
+const processCancel = async (record) => {
+  isProcessing.value = true
+  try {
+    await bookingsApi.cancelBooking(record.request_id)
 
-      toastStore.showToast('取消申請已送出', 'success')
-    } catch (err) {
-      console.error('取消失敗:', err)
-      toastStore.showToast(err.response?.data?.message || '取消失敗，請稍後再試', 'error')
+    // 從紀錄中移除或更新狀態
+    const index = records.findIndex((r) => r.id === record.id)
+    if (index > -1) {
+      records[index].status = '已取消'
+      records[index].action = ''
     }
+
+    toastStore.showToast('取消申請已送出', 'success')
+  } catch (err) {
+    console.error('取消失敗:', err)
+    toastStore.showToast(err.response?.data?.message || '取消失敗，請稍後再試', 'error')
+  } finally {
+    isProcessing.value = false
   }
 }
 
@@ -435,6 +479,41 @@ onMounted(() => {
               <h4>駁回原因：</h4>
               <p>{{ currentRecord.rejectReason || '管理員介面傳送過來文字' }}</p>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 確認操作彈出視窗 -->
+    <div v-if="showConfirmModal" class="modal-overlay">
+      <div class="confirm-modal" @click.stop>
+        <div class="confirm-modal-content">
+          <p class="confirm-title">
+            {{
+              confirmType === 'return'
+                ? `確定要歸還 ${confirmRecord?.room} 的借用嗎？`
+                : `確定要取消 ${confirmRecord?.room} 的申請嗎？`
+            }}
+          </p>
+          <div class="confirm-actions">
+            <button
+              class="confirm-btn cancel-btn"
+              @click="closeConfirmModal"
+              :disabled="isProcessing"
+            >
+              取消
+            </button>
+            <button
+              class="confirm-btn ok-btn"
+              :class="{
+                'btn-danger': confirmType === 'cancel',
+                'btn-primary': confirmType === 'return',
+              }"
+              @click="handleConfirm"
+              :disabled="isProcessing"
+            >
+              {{ isProcessing ? '處理中...' : '確定' }}
+            </button>
           </div>
         </div>
       </div>
@@ -757,5 +836,83 @@ h1 {
 .card-footer .btn {
   flex: 1 1 auto;
   text-align: center;
+}
+
+/* 確認彈出視窗樣式 */
+.confirm-modal {
+  background: #fff;
+  padding: 30px;
+  border-radius: 15px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.confirm-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24px;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.confirm-btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.confirm-btn.cancel-btn {
+  background-color: #e5e7eb;
+  color: #4b5563;
+}
+
+.confirm-btn.cancel-btn:hover {
+  background-color: #d1d5db;
+}
+
+.confirm-btn.ok-btn.btn-primary {
+  background-color: #3b82f6;
+  color: #fff;
+}
+
+.confirm-btn.ok-btn.btn-primary:hover {
+  background-color: #2563eb;
+}
+
+.confirm-btn.ok-btn.btn-danger {
+  background-color: #ef4444;
+  color: #fff;
+}
+
+.confirm-btn.ok-btn.btn-danger:hover {
+  background-color: #dc2626;
+}
+
+.confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

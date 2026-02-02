@@ -78,7 +78,7 @@
                   </button>
                   <button
                     class="btn-icon btn-icon-danger"
-                    @click="confirmDelete(item)"
+                    @click="openDeleteModal(item)"
                     title="刪除"
                   >
                     <svg
@@ -166,6 +166,26 @@
         </div>
       </div>
     </div>
+
+    <!-- Delete Confirm Modal -->
+    <div v-if="showDeleteModal" class="modal-overlay" @click.self="closeDeleteModal">
+      <div class="modal-container delete-modal">
+        <div class="modal-header">
+          <h3 class="modal-title">確認刪除</h3>
+          <button type="button" class="btn-close" @click="closeDeleteModal">×</button>
+        </div>
+        <div class="modal-body">
+          <p>
+            確定要刪除公告 <strong>"{{ deleteTarget?.title }}"</strong> 嗎？
+          </p>
+          <p class="text-danger" style="font-size: 0.9rem; margin-top: 8px">此動作無法復原。</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeDeleteModal">取消</button>
+          <button type="button" class="btn btn-danger" @click="confirmDelete">確定刪除</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -177,7 +197,10 @@ import {
   updateAnnouncement,
   deleteAnnouncement,
 } from '../api/announcements'
+import { useToastStore } from '@/stores/toast'
 import dayjs from 'dayjs'
+
+const toastStore = useToastStore()
 
 const announcements = ref([])
 const loading = ref(false)
@@ -192,6 +215,10 @@ const form = ref({
   content: '',
   expired_at: '',
 })
+
+// Delete Confirm Modal State
+const showDeleteModal = ref(false)
+const deleteTarget = ref(null)
 
 onMounted(() => {
   fetchAnnouncements()
@@ -247,7 +274,7 @@ const closeModal = () => {
 
 const submitForm = async () => {
   if (!form.value.title || !form.value.content) {
-    alert('請填寫標題與內容')
+    toastStore.showToast('請填寫標題與內容', 'warning')
     return
   }
 
@@ -261,30 +288,42 @@ const submitForm = async () => {
 
     if (isEdit.value) {
       await updateAnnouncement(currentId.value, payload)
-      alert('更新成功')
+      toastStore.showToast('更新成功', 'success')
     } else {
       await createAnnouncement(payload)
-      alert('新增成功')
+      toastStore.showToast('新增成功', 'success')
     }
     closeModal()
     fetchAnnouncements()
   } catch (err) {
     console.error(err)
-    alert('操作失敗: ' + (err.response?.data?.error || err.message))
+    toastStore.showToast('操作失敗: ' + (err.response?.data?.error || err.message), 'error')
   } finally {
     submitting.value = false
   }
 }
 
-const confirmDelete = async (item) => {
-  if (confirm(`確定要刪除公告 "${item.title}" 嗎？\n此動作無法復原。`)) {
-    try {
-      await deleteAnnouncement(item.announcement_id)
-      fetchAnnouncements()
-    } catch (err) {
-      console.error(err)
-      alert('刪除失敗')
-    }
+const openDeleteModal = (item) => {
+  deleteTarget.value = item
+  showDeleteModal.value = true
+}
+
+const closeDeleteModal = () => {
+  showDeleteModal.value = false
+  deleteTarget.value = null
+}
+
+const confirmDelete = async () => {
+  if (!deleteTarget.value) return
+
+  try {
+    await deleteAnnouncement(deleteTarget.value.announcement_id)
+    toastStore.showToast('刪除成功', 'success')
+    fetchAnnouncements()
+    closeDeleteModal()
+  } catch (err) {
+    console.error(err)
+    toastStore.showToast('刪除失敗', 'error')
   }
 }
 </script>
@@ -345,6 +384,15 @@ const confirmDelete = async (item) => {
 
 .btn-secondary:hover {
   background-color: #d1d5db;
+}
+
+.btn-danger {
+  background-color: #ef4444;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
 }
 
 .btn-icon {
