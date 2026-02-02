@@ -85,7 +85,7 @@ router.beforeEach(async (to, from, next) => {
   // Wait for auth to initialize (check user login status)
   await authStore.ensureInitialized()
 
-  const publicPages = ['/login', '/', '/introduction', '/home']
+  const publicPages = ['/login', '/', '/introduction', '/home', '/borrow_status']
   const authRequired = !publicPages.includes(to.path)
 
   if (authRequired && !authStore.isLoggedIn.value) {
