@@ -238,7 +238,7 @@ function handleConfirm() {
     borrowType: '單次借用',
   }
 
-  if (!authStore.isLoggedIn) {
+  if (!authStore.isLoggedIn.value) {
     const targetFullPath = router.resolve({
       path: '/borrow',
       query: targetQuery,

@@ -3,10 +3,12 @@ import { ref } from 'vue'
 
 import BorrowReview from './BorrowReview.vue'
 import BlacklistPage from './BlacklistPage.vue'
+import AdminAnnouncements from './AdminAnnouncements.vue'
 
 const links = [
   { label: '借用審核', id: 'borrow-review' },
   { label: '違規(黑名單)', id: 'blacklist-management' },
+  { label: '公告管理', id: 'announcements' },
 ]
 
 //預設頁面
@@ -36,6 +38,7 @@ function changePage(id) {
     <section class="content">
       <BorrowReview v-if="page === 'borrow-review'" />
       <BlacklistPage v-else-if="page === 'blacklist-management'" />
+      <AdminAnnouncements v-else-if="page === 'announcements'" />
     </section>
   </div>
 </template>

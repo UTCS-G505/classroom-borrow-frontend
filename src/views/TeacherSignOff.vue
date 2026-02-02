@@ -98,7 +98,7 @@ async function handleSignOff(status) {
 // Lifecycle
 // Lifecycle
 onMounted(async () => {
-  if (!authStore.isLoggedIn) {
+  if (!authStore.isLoggedIn.value) {
     // Redirect to login with return url
     router.push({
       path: '/login',

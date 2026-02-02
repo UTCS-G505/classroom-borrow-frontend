@@ -88,7 +88,7 @@ router.beforeEach(async (to, from, next) => {
   const publicPages = ['/login', '/', '/introduction', '/home']
   const authRequired = !publicPages.includes(to.path)
 
-  if (authRequired && !authStore.isLoggedIn) {
+  if (authRequired && !authStore.isLoggedIn.value) {
     next({
       path: '/login',
       query: { redirect: to.fullPath },

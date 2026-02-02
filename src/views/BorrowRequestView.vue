@@ -400,7 +400,7 @@ const autoFillBorrowerInfo = () => {
       form.borrowerName = userStore.username || ''
     }
     if (!form.borrowerEmail) {
-      form.borrowerEmail = userStore.primary_email || ''
+      form.borrowerEmail = userStore.email || ''
     }
     if (!form.borrowerPhone) {
       form.borrowerPhone = userStore.phone_number || ''
