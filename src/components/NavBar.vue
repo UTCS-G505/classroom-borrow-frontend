@@ -160,7 +160,7 @@ onMounted(() => {
 
       <li class="auth-item">
         <RouterLink
-          v-if="!authStore.isLoggedIn"
+          v-if="!authStore.isLoggedIn.value"
           to="/login"
           class="nav-link"
           active-class="active"
@@ -169,7 +169,7 @@ onMounted(() => {
           登入
         </RouterLink>
 
-        <div v-else class="user-menu-container">
+        <div v-else-if="authStore.isLoggedIn.value" class="user-menu-container">
           <button class="nav-link user-btn" @click.stop="toggleUserMenu">
             <span class="username-text">{{ userStore.username || '載入中...' }}</span>
             <span class="arrow" :class="{ rotate: isUserMenuOpen }">▼</span>
