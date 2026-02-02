@@ -337,7 +337,13 @@ const submitForm = async () => {
       toastStore.showToast('請先登入', 'error')
       router.push({ path: '/login' })
     } else if (error.response?.status === 403) {
-      toastStore.showToast('您沒有權限進行此操作', 'error')
+      // Check if this is a blacklist error
+      const errorData = error.response?.data
+      if (errorData?.reason) {
+        toastStore.showToast(`您目前在黑名單中，無法借用。原因：${errorData.reason}`, 'error')
+      } else {
+        toastStore.showToast(errorData?.error || '您沒有權限進行此操作', 'error')
+      }
     } else {
       toastStore.showToast(error.response?.data?.message || '提交失敗，請稍後再試', 'error')
     }
@@ -732,6 +738,12 @@ const autoFillBorrowerInfo = () => {
         {{ isSubmitting ? '提交中...' : '送出申請' }}
       </button>
     </div>
+
+    <!-- Loading Overlay -->
+    <div v-if="isSubmitting" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">正在提交申請...</p>
+    </div>
   </div>
 </template>
 
@@ -740,6 +752,7 @@ const autoFillBorrowerInfo = () => {
   max-width: 1000px;
   margin: 40px auto;
   color: #666;
+  position: relative;
 }
 .borrow-view h1 {
   font-size: 30px;
@@ -750,6 +763,44 @@ const autoFillBorrowerInfo = () => {
   color: red;
   font-size: 15px;
   margin-top: 5px;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  margin-top: 16px;
+  font-size: 16px;
+  color: #4b5563;
+  font-weight: 500;
 }
 
 /* 階段指示器樣式 */
