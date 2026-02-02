@@ -66,6 +66,26 @@ function formatTime(timeStr) {
   return timeStr.substring(0, 5)
 }
 
+// Get status CSS class based on status value
+function statusClass(status) {
+  switch (status) {
+    case '核准':
+    case '已核准':
+    case '借用中':
+    case '已歸還':
+      return 'status status-approved'
+    case '退件':
+    case '駁回':
+    case '已取消':
+      return 'status status-rejected'
+    case '審核中':
+    case '教師核准':
+      return 'status status-pending'
+    default:
+      return 'status'
+  }
+}
+
 onMounted(() => {
   fetchBookings()
 })
@@ -191,6 +211,7 @@ function closeModal() {
 <template>
   <!-- Loading State -->
   <div v-if="isLoading" class="loading">
+    <div class="spinner"></div>
     <p>載入中...</p>
   </div>
 
@@ -242,7 +263,7 @@ function closeModal() {
             <td><button class="purpose" @click="openDetail(item)">詳細資訊</button></td>
             <td>
               <!-- 顯示當前狀態 -->
-              <span>{{ item.status }}</span>
+              <span :class="statusClass(item.status)">{{ item.status }}</span>
             </td>
             <td>
               <!-- 操作按鈕 -->
@@ -253,7 +274,7 @@ function closeModal() {
           </tr>
         </tbody>
       </table>
-      <p v-else>目前沒有待審核的申請</p>
+      <p v-else class="empty-state">目前沒有待審核的申請</p>
     </section>
 
     <!-- 已完成審核 -->
@@ -274,12 +295,14 @@ function closeModal() {
             <td>{{ item.applicant }}</td>
             <td>{{ item.classroom }}</td>
             <td>{{ item.date }} {{ item.startTime }} - {{ item.endTime }}</td>
-            <td>{{ item.status }}</td>
+            <td>
+              <span :class="statusClass(item.status)">{{ item.status }}</span>
+            </td>
             <td>{{ item.reason || '-' }}</td>
           </tr>
         </tbody>
       </table>
-      <p v-else>目前沒有已完成審核的資料。</p>
+      <p v-else class="empty-state">目前沒有已完成審核的資料</p>
     </section>
   </template>
 
@@ -410,70 +433,153 @@ function closeModal() {
 </template>
 
 <style scoped>
+/* Loading State */
 .loading {
   text-align: center;
-  padding: 40px;
-  font-size: 18px;
+  padding: 60px 0;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #4a5568;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading p {
+  font-size: 16px;
   color: #666;
 }
 
+/* Section Cards */
 .stats,
 .review,
 .reviewed {
   background-color: #fff;
-  padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  padding: 25px 30px;
+  border-radius: 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  border: 1px solid #eee;
+  margin-bottom: 25px;
+}
+
+/* Statistics Section */
+.stats h3,
+.review h3,
+.reviewed h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 .data {
   display: flex;
   align-items: center;
-  gap: 15px;
-  font-size: 16px;
+  gap: 20px;
+  font-size: 15px;
   margin-top: 10px;
+  color: #555;
+}
+
+.data strong {
+  color: #333;
+  font-size: 18px;
 }
 
 .divider {
-  color: #ccc;
+  color: #ddd;
 }
 
-h3 {
-  margin-bottom: 15px;
-}
-
+/* Table Styles */
 table {
   width: 100%;
   border-collapse: collapse;
+  text-align: center;
+  font-size: 15px;
 }
 
 thead {
-  background-color: #e6e6e6;
+  background-color: #f8f9fa;
 }
 
-th,
+th {
+  color: #555;
+  padding: 14px 12px;
+  font-weight: 600;
+  font-size: 15px;
+  border-bottom: 2px solid #dee2e6;
+}
+
 td {
-  border: solid 1px #ddd;
-  padding: 8px;
-  text-align: center;
+  padding: 16px 12px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+  color: #444;
 }
 
-/* ---------- 狀態標籤樣式 ---------- */
+tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Status Badges */
 .status {
-  padding: 2px 8px;
-  border-radius: 4px;
-  color: #333;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-block;
+  white-space: nowrap;
 }
 
-/* ---------- 按鈕樣式 ---------- */
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-approved {
+  background-color: #d1eddd;
+  color: #155724;
+}
+
+.status-rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 30px 0;
+  color: #999;
+  font-size: 15px;
+}
+
+/* Button Styles */
 button {
-  padding: 8px 10px;
+  padding: 8px 14px;
   border: none;
-  border-radius: 4px;
-  color: #fff;
+  border-radius: 6px;
   cursor: pointer;
-  margin-right: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-right: 6px;
+  transition: all 0.2s ease;
 }
 
 button:disabled {
@@ -481,199 +587,310 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* 核准按鈕 */
+button:last-child {
+  margin-right: 0;
+}
+
+/* Approve Button */
 .approve {
-  background-color: #3d87e5;
+  background-color: #d1eddd;
+  color: #155724;
 }
 
-/* 駁回按鈕 */
+.approve:hover {
+  background-color: #b8e0c4;
+  transform: translateY(-1px);
+}
+
+/* Deny Button */
 .denied {
-  background-color: #e54c4f;
+  background-color: #f8d7da;
+  color: #721c24;
 }
 
-/* 黑名單按鈕 */
+.denied:hover {
+  background-color: #f1c1c5;
+  transform: translateY(-1px);
+}
+
+/* Blacklist Button - Less prominent */
 .blacklist {
-  background-color: #444;
+  background-color: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
 }
 
-/* 用途按鈕 */
+.blacklist:hover {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  transform: translateY(-1px);
+}
+
+/* Purpose/Details Button */
 .purpose {
-  background-color: #dcdddf;
-  color: #666;
+  background-color: #e9ecef;
+  color: #495057;
 }
 
-/* ---------- 輸入理由彈窗樣式 ---------- */
+.purpose:hover {
+  background-color: #dee2e6;
+  transform: translateY(-1px);
+}
+
+/* Modal Overlay */
 .modalOverlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.4); /* 半透明背景 */
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000; /* 保證在最上層 */
+  z-index: 1000;
+  backdrop-filter: blur(2px);
 }
 
+/* Reason Modal */
 .modal {
   background-color: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  width: 400px;
-  max-width: 100%;
+  padding: 25px;
+  border-radius: 15px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: modalFadeIn 0.2s ease-out;
 }
 
-/* 輸入框 */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15px;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
 .modal textarea {
   width: 100%;
   margin-top: 10px;
+  padding: 12px;
   resize: none;
-  font-size: 16px;
-  border: solid 1px #ccc;
+  font-size: 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.modal textarea:focus {
+  outline: none;
+  border-color: #4a5568;
+  box-shadow: 0 0 0 3px rgba(74, 85, 104, 0.1);
 }
 
 .modalButtons {
   display: flex;
   justify-content: flex-end;
-  margin-top: 10px;
+  margin-top: 20px;
   gap: 10px;
 }
 
 .modalButtons button {
-  background-color: #dcdddf;
-  color: #666;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
 }
 
-/* ---------- 詳細資訊彈窗樣式 ---------- */
+.modalButtons button:first-child {
+  background-color: #4a5568;
+  color: #fff;
+}
+
+.modalButtons button:first-child:hover {
+  background-color: #2d3748;
+}
+
+.modalButtons button:last-child {
+  background-color: #e5e7eb;
+  color: #4b5563;
+}
+
+.modalButtons button:last-child:hover {
+  background-color: #d1d5db;
+}
+
+/* Detail Modal */
 .detail-content {
   color: #333;
   background-color: white;
   border-radius: 15px;
   max-width: 800px;
   width: 90%;
-  max-height: 80vh;
+  max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: modalFadeIn 0.2s ease-out;
 }
 
 .detail-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 30px;
-  border-bottom: 1px solid #eee;
+  padding: 20px 25px;
+  border-bottom: 1px solid #e5e7eb;
   background-color: #f8f9fa;
   border-radius: 15px 15px 0 0;
+  position: sticky;
+  top: 0;
 }
 
 .detail-header h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .close-btn {
   background: none;
   border: none;
-  font-size: 30px;
-  color: #999;
+  font-size: 28px;
+  color: #9ca3af;
   cursor: pointer;
   padding: 0;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  margin: 0;
 }
+
 .close-btn:hover {
-  background-color: #f0f0f0;
+  background-color: #e5e7eb;
+  color: #4b5563;
 }
 
 .detail-body {
-  padding: 30px;
+  padding: 25px;
 }
+
 .detail-section {
-  margin-bottom: 30px;
+  margin-bottom: 25px;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
 }
 
 .detail-section h3 {
   margin-bottom: 15px;
-  font-size: 20px;
-  border-bottom: 2px solid #ccc;
-  padding-bottom: 5px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #4a5568;
+  padding-bottom: 8px;
 }
+
 .detail-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  gap: 12px;
 }
+
 .detail-item {
   display: flex;
   flex-direction: column;
-  padding: 10px;
+  padding: 12px;
   background-color: #f8f9fa;
   border-radius: 8px;
 }
+
 .detail-item.full-width {
   grid-column: 1 / -1;
 }
+
 .detail-item .label {
-  font-weight: bold;
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 5px;
-}
-.detail-item .value {
-  color: #333;
-  font-size: 16px;
-  word-wrap: break-word;
-}
-.reason-content {
-  text-align: left;
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 4px;
 }
 
-/* --------- 手機版 RWD --------- */
+.detail-item .value {
+  color: #333;
+  font-size: 15px;
+  word-wrap: break-word;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  /* 統計區改直排 */
+  .stats,
+  .review,
+  .reviewed {
+    padding: 20px;
+    margin-bottom: 15px;
+  }
+
   .data {
     flex-direction: column;
     align-items: flex-start;
-    gap: 5px;
+    gap: 8px;
   }
 
   .divider {
-    display: none; /* 手機就不要顯示分隔線 */
+    display: none;
   }
 
-  /* 表格支援橫向捲動 */
   table {
     display: block;
     overflow-x: auto;
     white-space: nowrap;
   }
 
-  /* 操作按鈕：堆疊顯示 */
   td button {
     display: block;
     width: 100%;
-    margin: 5px 0;
+    margin: 4px 0;
   }
 
-  /* 彈窗寬度調整 */
   .modal {
-    width: 80%;
-    padding: 15px;
+    width: 90%;
+    padding: 20px;
   }
 
-  /* 彈窗按鈕改直排 */
   .modalButtons {
     flex-direction: column;
   }
 
   .modalButtons button {
     width: 100%;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-header {
+    padding: 15px 20px;
+  }
+
+  .detail-body {
+    padding: 20px;
   }
 }
 </style>

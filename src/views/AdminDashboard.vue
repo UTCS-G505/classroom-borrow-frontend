@@ -52,16 +52,21 @@ function changePage(id) {
 
 /*側邊欄*/
 .sidebar {
-  width: 160px;
-  background-color: #5d5c61;
+  width: 200px;
+  background: linear-gradient(180deg, #4a5568 0%, #2d3748 100%);
   color: #fff;
-  padding: 1rem;
+  padding: 1.5rem 1rem;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .sidebarTitle {
-  font-size: 20px;
-  margin-top: 30px;
-  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 20px;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.5px;
 }
 
 .sidebar ul {
@@ -70,30 +75,37 @@ function changePage(id) {
 }
 
 .sidebar li {
-  margin-bottom: 15px;
-  cursor: pointer;
+  margin-bottom: 8px;
 }
 
 .navLink {
   text-decoration: none;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.85);
   display: block;
-  padding: 8px;
-  transition: background-color 0.3s;
+  padding: 12px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .navLink:hover {
-  background-color: #777;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: translateX(4px);
 }
 
 .navLink.current {
-  background-color: #777;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .content {
-  flex: 1; /* 自動撐滿剩下空間 */
-  padding: 20px;
-  background-color: #f6f6f5;
+  flex: 1;
+  padding: 30px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
 }
 
 /* --------- 手機版 RWD --------- */
@@ -104,20 +116,37 @@ function changePage(id) {
 
   .sidebar {
     width: 100%;
-    padding: 0.5rem;
+    padding: 0.75rem;
+    background: linear-gradient(90deg, #4a5568 0%, #2d3748 100%);
   }
 
   .sidebarTitle {
-    display: none; /* 手機版隱藏大標題，省空間 */
+    display: none;
   }
 
   .sidebar ul {
-    display: flex; /* 導覽改成橫向 */
+    display: flex;
     justify-content: space-around;
+    gap: 8px;
   }
 
   .sidebar li {
     margin-bottom: 0;
+    flex: 1;
+  }
+
+  .navLink {
+    text-align: center;
+    padding: 10px 8px;
+    font-size: 14px;
+  }
+
+  .navLink:hover {
+    transform: none;
+  }
+
+  .content {
+    padding: 20px 15px;
   }
 }
 </style>
@@ -126,13 +155,16 @@ function changePage(id) {
 * {
   padding: 0;
   margin: 0;
+  box-sizing: border-box;
 }
 
 html,
 body {
-  background-color: #f6f6f5;
+  background-color: #f8f9fa;
   width: 100%;
   height: 100%;
-  overflow-x: hidden; /* 防止橫向捲動 */
+  overflow-x: hidden;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 </style>

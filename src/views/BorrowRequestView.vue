@@ -852,12 +852,13 @@ label {
 }
 
 input {
-  height: 30px;
+  height: 50px;
   background-color: #f0f0f0;
   padding: 10px;
   font-size: 21px;
   border: 1px solid #aaaaaa;
   border-radius: 10px;
+  box-sizing: border-box;
 }
 
 input[type='radio'] {
@@ -907,6 +908,7 @@ select {
   font-size: 21px;
   border: 1px solid #aaaaaa;
   border-radius: 10px;
+  box-sizing: border-box;
 }
 
 textarea {
