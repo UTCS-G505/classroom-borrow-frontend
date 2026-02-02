@@ -4,9 +4,6 @@ import { useRoute } from 'vue-router'
 import apiClient from '@/api/axios'
 import { useToastStore } from '@/stores/toast'
 
-// Constants
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-
 // Route & State
 const route = useRoute()
 const toastStore = useToastStore()

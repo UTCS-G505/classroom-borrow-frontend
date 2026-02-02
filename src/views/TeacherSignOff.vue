@@ -5,9 +5,6 @@ import apiClient from '@/api/axios' // Import configured instance
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 
-// Constants
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-
 // Route & State
 const route = useRoute()
 const router = useRouter()
