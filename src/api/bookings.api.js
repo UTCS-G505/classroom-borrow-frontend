@@ -45,6 +45,7 @@ export const bookingsApi = {
    * @param {string} [bookingData.borrower_department] - Borrower's department
    * @param {string} [bookingData.borrower_phone] - Borrower's phone
    * @param {string} [bookingData.borrower_email] - Borrower's email
+   * @param {string} bookingData.borrower_name - Borrower's name
    * @returns {Promise} Response with message and request_id
    */
   createBooking: (bookingData) => {

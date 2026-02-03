@@ -472,6 +472,9 @@ onMounted(() => {
     margin-top: 0;
     animation: none;
   }
+  .dropdown-item {
+    justify-content: center;
+  }
 }
 @media (max-width: 1024px) and (min-width: 769px) {
   .navbar {

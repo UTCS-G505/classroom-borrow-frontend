@@ -112,7 +112,7 @@ const fetchRecords = async () => {
         peopleCount: item.people_count,
         borrowType: item.borrow_type,
         description: item.reason,
-        borrowerName: '', // Not returned by API for own bookings
+        borrowerName: item.borrower_name || userStore.username.value || '',
         teacherName: item.teacher_name,
         borrowerDepartment: item.borrower_department,
         teacherDepartment: item.teacher_department,
