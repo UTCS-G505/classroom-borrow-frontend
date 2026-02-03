@@ -399,17 +399,24 @@ watch(
   { deep: true },
 )
 
+// 標記是否已自動填充過
+const isAutoFilled = ref(false)
+
 // 自動填充借用人資訊的函數
 const autoFillBorrowerInfo = () => {
-  if (userStore.profile) {
+  // Check userStore.profile.value to ensure data is present
+  if (userStore.profile.value && !isAutoFilled.value) {
+    // Set flag immediately to prevent race conditions
+    isAutoFilled.value = true
+
     if (!form.borrowerName) {
-      form.borrowerName = userStore.username || ''
+      form.borrowerName = userStore.username.value || ''
     }
     if (!form.borrowerEmail) {
-      form.borrowerEmail = userStore.email || ''
+      form.borrowerEmail = userStore.email.value || ''
     }
     if (!form.borrowerPhone) {
-      form.borrowerPhone = userStore.phone_number || ''
+      form.borrowerPhone = userStore.phone_number.value || ''
     }
     if (!form.borrowerDepartment) {
       form.borrowerDepartment =
