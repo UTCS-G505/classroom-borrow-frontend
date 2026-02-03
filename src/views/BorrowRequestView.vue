@@ -303,6 +303,7 @@ const submitForm = async () => {
       borrower_department: form.borrowerDepartment,
       borrower_phone: form.borrowerPhone,
       borrower_email: form.borrowerEmail,
+      borrower_name: form.borrowerName,
     }
 
     const response = await bookingsApi.createBooking(bookingData)
