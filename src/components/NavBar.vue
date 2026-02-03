@@ -5,18 +5,28 @@ import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import logo from '@/assets/logo.png'
 
+import { computed } from 'vue'
+
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const userStore = useUserStore()
 
-const links = [
-  { to: '/home', label: '首頁' },
-  { to: '/borrow_status', label: '教室借用情況' },
-  { to: '/introduction', label: '教室介紹' },
-  { to: '/borrow', label: '申請借用' },
-  { to: '/record', label: '借用紀錄' },
-]
+const links = computed(() => {
+  return [
+    { to: '/home', label: '首頁' },
+    { to: '/borrow_status', label: '教室借用情況' },
+    { to: '/introduction', label: '教室介紹' },
+    { to: '/borrow', label: '申請借用' },
+    { to: '/record', label: '借用紀錄' },
+  ]
+})
+
+const isAdmin = computed(() => {
+  console.log('userStore.role.value', userStore.role.value)
+  const role = userStore.role.value
+  return role !== '' && role <= 1
+})
 
 const isMobileMenuOpen = ref(false)
 const isScrolled = ref(false)
@@ -159,15 +169,33 @@ onMounted(() => {
           登入
         </RouterLink>
 
-        <div v-else class="user-menu-container">
+        <div v-else-if="authStore.isLoggedIn.value" class="user-menu-container">
           <button class="nav-link user-btn" @click.stop="toggleUserMenu">
             <span class="username-text">{{ userStore.username || '載入中...' }}</span>
             <span class="arrow" :class="{ rotate: isUserMenuOpen }">▼</span>
           </button>
 
-          <div v-if="isUserMenuOpen" class="dropdown-menu">
+          <div v-if="isUserMenuOpen" class="user-dropdown-menu">
+            <RouterLink v-if="isAdmin" to="/admin" class="dropdown-item" @click="closeMobileMenu">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+                ></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span>借用管理</span>
+            </RouterLink>
             <button @click="handleLogout" class="dropdown-item logout-btn">
-              <span>登出</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="18"
@@ -184,6 +212,7 @@ onMounted(() => {
                 <polyline points="16 17 21 12 16 7"></polyline>
                 <line x1="21" y1="12" x2="9" y2="12"></line>
               </svg>
+              <span>登出</span>
             </button>
           </div>
         </div>
@@ -297,7 +326,7 @@ onMounted(() => {
 .arrow.rotate {
   transform: rotate(180deg);
 }
-.dropdown-menu {
+.user-dropdown-menu {
   position: absolute;
   top: 100%;
   right: 0;
@@ -306,9 +335,13 @@ onMounted(() => {
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  min-width: 100px;
-  padding: 5px 0;
+  min-width: 160px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   overflow: hidden;
+  white-space: nowrap;
   animation: fadeIn 0.2s ease;
 }
 @keyframes fadeIn {
@@ -324,15 +357,21 @@ onMounted(() => {
 .dropdown-item {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 8px;
   width: 100%;
-  padding: 10px 15px;
+  padding: 8px 12px;
+  border-radius: 4px;
   background: transparent;
   border: none;
-  color: #dc3545;
+  color: #333;
   font-size: 1rem;
   cursor: pointer;
   font-weight: 500;
+  text-decoration: none;
+}
+.dropdown-item.logout-btn {
+  color: #dc3545;
 }
 .dropdown-item:hover {
   background-color: #fff5f5;
@@ -424,7 +463,7 @@ onMounted(() => {
     padding: 1rem 2rem;
     background: transparent;
   }
-  .dropdown-menu {
+  .user-dropdown-menu {
     position: static;
     box-shadow: none;
     border: none;

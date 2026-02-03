@@ -1,118 +1,101 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useToastStore } from '@/stores/toast'
+import adminApi from '../api/admin.api.js'
 
+const toastStore = useToastStore()
 const emit = defineEmits(['addBlacklist'])
 
 const applications = ref([])
+const isLoading = ref(true)
 
-// 初始化：從 localStorage 載入
-onMounted(() => {
-  const saved = localStorage.getItem('applications')
-  if (saved) {
-    applications.value = JSON.parse(saved)
-  } else {
-    applications.value = [
-      {
-        applicant: '王XX',
-        classroom: 'G508',
-        date: '2025/07/30',
-        startTime: '12:00',
-        endTime: '15:00',
-        status: '審核中',
-        reason: '',
-        borrowType: '單次借用',
-        eventName: '程式設計課程',
-        peopleCount: 20,
-        description: '課程教學',
-        teacherName: '李教授',
-        borrowerDepartment: '資訊工程系',
-        teacherDepartment: '資訊工程系',
-        borrowerEmail: 'wang@example.com',
-        teacherEmail: 'li@example.com',
-        borrowerPhone: '0912-345-678',
-        teacherPhone: '02-1234-5678',
-      },
-      {
-        applicant: '陳XX',
-        classroom: 'G516',
-        date: '2025/07/31',
-        startTime: '10:00',
-        endTime: '12:00',
-        status: '審核中',
-        reason: '',
-        borrowType: '單次借用',
-        eventName: '學生會會議',
-        peopleCount: 15,
-        description: '學生會討論活動',
-        teacherName: '張教授',
-        borrowerDepartment: '學生會',
-        teacherDepartment: '學務處',
-        borrowerEmail: 'chen@example.com',
-        teacherEmail: 'zhang@example.com',
-        borrowerPhone: '0987-654-321',
-        teacherPhone: '02-8765-4321',
-      },
-      {
-        applicant: '張XX',
-        classroom: 'G316',
-        date: '2025/08/10',
-        startTime: '14:00',
-        endTime: '15:00',
-        status: '審核中',
-        reason: '',
-        borrowType: '單次借用',
-        eventName: '社團活動',
-        peopleCount: 25,
-        description: '社團幹部訓練活動',
-        teacherName: '劉教授',
-        borrowerDepartment: '學務處',
-        teacherDepartment: '學務處',
-        borrowerEmail: 'zhang@example.com',
-        teacherEmail: 'liu@example.com',
-        borrowerPhone: '0923-456-789',
-        teacherPhone: '02-2345-6789',
-      },
-      {
-        applicant: '林XX',
-        classroom: 'G316',
-        date: '2025/08/10 至 2025/12/31',
-        multiStartDate: '2025.08.10',
-        multiEndDate: '2025.12.31',
-        startTime: '14:00',
-        endTime: '15:00',
-        status: '審核中',
-        reason: '',
-        borrowType: '多次借用',
-        eventName: '週會課程',
-        repeatType: '每周',
-        peopleCount: 25,
-        description: '每週定期課程教學',
-        teacherName: '李教授',
-        borrowerDepartment: '資訊科學系',
-        teacherDepartment: '資訊科學系',
-        borrowerEmail: 'zhang@example.com',
-        teacherEmail: 'liu@example.com',
-        borrowerPhone: '0923-456-789',
-        teacherPhone: '02-2345-6789',
-      },
-    ]
+// Fetch bookings from backend
+async function fetchBookings() {
+  isLoading.value = true
+  try {
+    const response = await adminApi.getAllBookings()
+    applications.value = response.data.map((item) => ({
+      // Map backend fields to frontend display
+      request_id: item.request_id,
+      user_id: item.user_id,
+      applicant: item.borrower_email?.split('@')[0] || '未知',
+      classroom: item.classroom_id,
+      date:
+        item.borrow_type === '多次借用' && item.end_date
+          ? `${formatDate(item.start_date)} 至 ${formatDate(item.end_date)}`
+          : formatDate(item.start_date),
+      multiStartDate: formatDate(item.start_date),
+      multiEndDate: item.end_date ? formatDate(item.end_date) : null,
+      startTime: formatTime(item.start_time),
+      endTime: formatTime(item.end_time),
+      status: item.status,
+      reason: item.reject_reason || '',
+      borrowType: item.borrow_type,
+      eventName: item.event_name,
+      peopleCount: item.people_count,
+      description: item.reason,
+      teacherName: item.teacher_name,
+      borrowerDepartment: item.borrower_department,
+      teacherDepartment: item.teacher_department,
+      borrowerEmail: item.borrower_email,
+      teacherEmail: item.teacher_email,
+      borrowerPhone: item.borrower_phone,
+      teacherPhone: item.teacher_phone,
+    }))
+  } catch (error) {
+    console.error('Failed to fetch bookings:', error)
+    toastStore.showToast('無法載入借用申請資料', 'error')
+  } finally {
+    isLoading.value = false
   }
-})
+}
 
-// 監聽 → 儲存
-watch(
-  applications,
-  (val) => {
-    localStorage.setItem('applications', JSON.stringify(val))
-  },
-  { deep: true },
-)
+// Format date from backend
+function formatDate(dateStr) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}/${month}/${day}`
+}
+
+// Format time from backend (HH:MM:SS -> HH:MM)
+function formatTime(timeStr) {
+  if (!timeStr) return ''
+  return timeStr.substring(0, 5)
+}
+
+// Get status CSS class based on status value
+function statusClass(status) {
+  switch (status) {
+    case '核准':
+    case '已核准':
+    case '借用中':
+    case '已歸還':
+      return 'status status-approved'
+    case '退件':
+    case '駁回':
+    case '已取消':
+      return 'status status-rejected'
+    case '審核中':
+    case '教師核准':
+      return 'status status-pending'
+    default:
+      return 'status'
+  }
+}
+
+onMounted(() => {
+  fetchBookings()
+})
 
 // ---------- 彈窗控制區 ----------
 const showModal = ref(false) // 控制彈窗是否顯示
 const currentAction = ref('') //denied或blacklist
 const currentApplication = ref(null)
 const inputReason = ref('') // 使用者輸入的理由
+const isSubmitting = ref(false)
 
 // 打開彈窗，傳入動作和申請索引
 function openModal(action, application) {
@@ -123,13 +106,42 @@ function openModal(action, application) {
 }
 
 // 按下確認 → 更新申請的狀態與理由
-function submitReason() {
-  if (currentApplication.value) {
-    const app = currentApplication.value
-    app.status = currentAction.value === 'denied' ? '駁回' : '黑名單'
-    app.reason = inputReason.value // 紀錄理由
+async function submitReason() {
+  if (!currentApplication.value) return
 
-    if (currentAction.value === 'blacklist') {
+  isSubmitting.value = true
+  const app = currentApplication.value
+
+  try {
+    if (currentAction.value === 'denied') {
+      // Reject the booking
+      await adminApi.updateBookingStatus(app.request_id, {
+        status: 'rejected',
+        reject_reason: inputReason.value,
+      })
+      app.status = '退件'
+      app.reason = inputReason.value
+      toastStore.showToast('已駁回申請', 'success')
+    } else if (currentAction.value === 'blacklist') {
+      // Reject and add to blacklist
+      await adminApi.updateBookingStatus(app.request_id, {
+        status: 'rejected',
+        reject_reason: inputReason.value,
+      })
+
+      // Add to blacklist with 1 year expiration
+      const expiredAt = new Date()
+      expiredAt.setFullYear(expiredAt.getFullYear() + 1)
+      await adminApi.addToBlacklist({
+        user_id: app.user_id,
+        reason: inputReason.value,
+        expired_at: expiredAt.toISOString().split('T')[0],
+      })
+
+      app.status = '退件'
+      app.reason = inputReason.value
+      toastStore.showToast('已加入黑名單', 'success')
+
       emit('addBlacklist', {
         applicant: app.applicant,
         classroom: app.classroom,
@@ -137,24 +149,37 @@ function submitReason() {
         reason: inputReason.value,
       })
     }
+  } catch (error) {
+    console.error('Failed to update booking:', error)
+    toastStore.showToast('操作失敗: ' + (error.response?.data?.error || '未知錯誤'), 'error')
+  } finally {
+    isSubmitting.value = false
+    showModal.value = false
   }
-  showModal.value = false // 關閉視窗
 }
 
 // ---------- 核准申請 ----------
-// 將申請狀態改為 "已核准"
-function approve(application) {
-  application.status = '已核准'
-  application.reason = ''
+async function approve(application) {
+  try {
+    await adminApi.updateBookingStatus(application.request_id, {
+      status: 'approved',
+    })
+    application.status = '核准'
+    application.reason = ''
+    toastStore.showToast('已核准申請', 'success')
+  } catch (error) {
+    console.error('Failed to approve booking:', error)
+    toastStore.showToast('核准失敗: ' + (error.response?.data?.error || '未知錯誤'), 'error')
+  }
 }
 
 // 區分待審核 / 已完成
 const pendingApplications = computed(() =>
-  applications.value.filter((item) => item.status === '審核中'),
+  applications.value.filter((item) => item.status === '審核中' || item.status === '教師核准'),
 )
 
 const reviewedApplications = computed(() =>
-  applications.value.filter((item) => item.status !== '審核中'),
+  applications.value.filter((item) => item.status !== '審核中' && item.status !== '教師核准'),
 )
 
 // ---------- 統計資料 ----------
@@ -162,10 +187,9 @@ const reviewedApplications = computed(() =>
 const stats = computed(() => {
   const total = applications.value.length //總申請數
   const pending = pendingApplications.value.length //審核中數量
-  const approved = applications.value.filter((item) => item.status == '已核准').length //已審核數量
-  const disallowed = applications.value.filter((item) => item.status == '駁回').length //駁回數量
-  const blacklist = applications.value.filter((item) => item.status == '黑名單').length //黑名單數量
-  return { total, pending, approved, disallowed, blacklist }
+  const approved = applications.value.filter((item) => item.status == '核准').length //已審核數量
+  const disallowed = applications.value.filter((item) => item.status == '退件').length //駁回數量
+  return { total, pending, approved, disallowed }
 })
 
 //詳細資訊彈窗
@@ -185,96 +209,102 @@ function closeModal() {
 </script>
 
 <template>
-  <!-- ---------- 當日借用統計 ---------- -->
-  <section class="stats">
-    <h3>今日借用統計</h3>
+  <!-- Loading State -->
+  <div v-if="isLoading" class="loading">
+    <div class="spinner"></div>
+    <p>載入中...</p>
+  </div>
 
-    <div class="data">
-      <span
-        >總借用：<strong>{{ stats.total }}</strong></span
-      >
-      <span class="divider">|</span>
-      <span
-        >審核中：<strong>{{ stats.pending }}</strong></span
-      >
-      <span class="divider">|</span>
-      <span
-        >已核准：<strong>{{ stats.approved }}</strong></span
-      >
-      <span class="divider">|</span>
-      <span
-        >駁回：<strong>{{ stats.disallowed }}</strong></span
-      >
-      <span class="divider">|</span>
-      <span
-        >黑名單：<strong>{{ stats.blacklist }}</strong></span
-      >
-    </div>
-  </section>
+  <template v-else>
+    <!-- ---------- 當日借用統計 ---------- -->
+    <section class="stats">
+      <h3>借用統計</h3>
 
-  <!-- ---------- 待審核申請列表 ---------- -->
-  <section class="review">
-    <h3>待審核申請</h3>
-    <table v-if="pendingApplications.length">
-      <thead>
-        <tr>
-          <th>申請人</th>
-          <th>教室</th>
-          <th>時間</th>
-          <th>用途</th>
-          <th>狀態</th>
-          <th>操作</th>
-        </tr>
-      </thead>
+      <div class="data">
+        <span
+          >總借用：<strong>{{ stats.total }}</strong></span
+        >
+        <span class="divider">|</span>
+        <span
+          >審核中：<strong>{{ stats.pending }}</strong></span
+        >
+        <span class="divider">|</span>
+        <span
+          >已核准：<strong>{{ stats.approved }}</strong></span
+        >
+        <span class="divider">|</span>
+        <span
+          >駁回：<strong>{{ stats.disallowed }}</strong></span
+        >
+      </div>
+    </section>
 
-      <tbody>
-        <!-- 逐筆顯示申請資料 -->
-        <tr v-for="(item, index) in pendingApplications" :key="index">
-          <td>{{ item.applicant }}</td>
-          <td>{{ item.classroom }}</td>
-          <td>{{ item.date }} {{ item.startTime }} - {{ item.endTime }}</td>
-          <td><button class="purpose" @click="openDetail(item)">詳細資訊</button></td>
-          <td>
-            <!-- 顯示當前狀態 -->
-            <span>{{ item.status }}</span>
-          </td>
-          <td>
-            <!-- 操作按鈕 -->
-            <button class="approve" @click="approve(item)">核准</button>
-            <button class="denied" @click="openModal('denied', item)">駁回</button>
-            <button class="blacklist" @click="openModal('blacklist', item)">加入黑名單</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <p v-else>目前沒有待審核的申請</p>
-  </section>
+    <!-- ---------- 待審核申請列表 ---------- -->
+    <section class="review">
+      <h3>待審核申請</h3>
+      <table v-if="pendingApplications.length">
+        <thead>
+          <tr>
+            <th>申請人</th>
+            <th>教室</th>
+            <th>時間</th>
+            <th>用途</th>
+            <th>狀態</th>
+            <th>操作</th>
+          </tr>
+        </thead>
 
-  <!-- 已完成審核 -->
-  <section class="reviewed">
-    <h3>已完成審核</h3>
-    <table v-if="reviewedApplications.length">
-      <thead>
-        <tr>
-          <th>申請人</th>
-          <th>教室</th>
-          <th>時間</th>
-          <th>狀態</th>
-          <th>備註</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(item, index) in reviewedApplications" :key="index">
-          <td>{{ item.applicant }}</td>
-          <td>{{ item.classroom }}</td>
-          <td>{{ item.date }} {{ item.startTime }} - {{ item.endTime }}</td>
-          <td>{{ item.status }}</td>
-          <td>{{ item.reason || '-' }}</td>
-        </tr>
-      </tbody>
-    </table>
-    <p v-else>目前沒有已完成審核的資料。</p>
-  </section>
+        <tbody>
+          <!-- 逐筆顯示申請資料 -->
+          <tr v-for="item in pendingApplications" :key="item.request_id">
+            <td>{{ item.applicant }}</td>
+            <td>{{ item.classroom }}</td>
+            <td>{{ item.date }} {{ item.startTime }} - {{ item.endTime }}</td>
+            <td><button class="purpose" @click="openDetail(item)">詳細資訊</button></td>
+            <td>
+              <!-- 顯示當前狀態 -->
+              <span :class="statusClass(item.status)">{{ item.status }}</span>
+            </td>
+            <td>
+              <!-- 操作按鈕 -->
+              <button class="approve" @click="approve(item)">核准</button>
+              <button class="denied" @click="openModal('denied', item)">駁回</button>
+              <button class="blacklist" @click="openModal('blacklist', item)">加入黑名單</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else class="empty-state">目前沒有待審核的申請</p>
+    </section>
+
+    <!-- 已完成審核 -->
+    <section class="reviewed">
+      <h3>已完成審核</h3>
+      <table v-if="reviewedApplications.length">
+        <thead>
+          <tr>
+            <th>申請人</th>
+            <th>教室</th>
+            <th>時間</th>
+            <th>狀態</th>
+            <th>備註</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in reviewedApplications" :key="item.request_id">
+            <td>{{ item.applicant }}</td>
+            <td>{{ item.classroom }}</td>
+            <td>{{ item.date }} {{ item.startTime }} - {{ item.endTime }}</td>
+            <td>
+              <span :class="statusClass(item.status)">{{ item.status }}</span>
+            </td>
+            <td>{{ item.reason || '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else class="empty-state">目前沒有已完成審核的資料</p>
+    </section>
+  </template>
 
   <!-- 駁回 / 黑名單理由彈窗 -->
   <div v-if="showModal" class="modalOverlay">
@@ -287,8 +317,10 @@ function closeModal() {
 
       <!-- 彈窗按鈕區 -->
       <div class="modalButtons">
-        <button @click="submitReason">確認</button>
-        <button @click="showModal = false">取消</button>
+        <button @click="submitReason" :disabled="isSubmitting">
+          {{ isSubmitting ? '處理中...' : '確認' }}
+        </button>
+        <button @click="showModal = false" :disabled="isSubmitting">取消</button>
       </div>
     </div>
   </div>
@@ -401,258 +433,464 @@ function closeModal() {
 </template>
 
 <style scoped>
+/* Loading State */
+.loading {
+  text-align: center;
+  padding: 60px 0;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #4a5568;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading p {
+  font-size: 16px;
+  color: #666;
+}
+
+/* Section Cards */
 .stats,
 .review,
 .reviewed {
   background-color: #fff;
-  padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  padding: 25px 30px;
+  border-radius: 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  border: 1px solid #eee;
+  margin-bottom: 25px;
+}
+
+/* Statistics Section */
+.stats h3,
+.review h3,
+.reviewed h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 .data {
   display: flex;
   align-items: center;
-  gap: 15px;
-  font-size: 16px;
+  gap: 20px;
+  font-size: 15px;
   margin-top: 10px;
+  color: #555;
+}
+
+.data strong {
+  color: #333;
+  font-size: 18px;
 }
 
 .divider {
-  color: #ccc;
+  color: #ddd;
 }
 
-h3 {
-  margin-bottom: 15px;
-}
-
+/* Table Styles */
 table {
   width: 100%;
   border-collapse: collapse;
+  text-align: center;
+  font-size: 15px;
 }
 
 thead {
-  background-color: #e6e6e6;
+  background-color: #f8f9fa;
 }
 
-th,
+th {
+  color: #555;
+  padding: 14px 12px;
+  font-weight: 600;
+  font-size: 15px;
+  border-bottom: 2px solid #dee2e6;
+}
+
 td {
-  border: solid 1px #ddd;
-  padding: 8px;
-  text-align: center;
+  padding: 16px 12px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+  color: #444;
 }
 
-/* ---------- 狀態標籤樣式 ---------- */
+tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Status Badges */
 .status {
-  padding: 2px 8px;
-  border-radius: 4px;
-  color: #333;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-block;
+  white-space: nowrap;
 }
 
-/* ---------- 按鈕樣式 ---------- */
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-approved {
+  background-color: #d1eddd;
+  color: #155724;
+}
+
+.status-rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 30px 0;
+  color: #999;
+  font-size: 15px;
+}
+
+/* Button Styles */
 button {
-  padding: 8px 10px;
+  padding: 8px 14px;
   border: none;
-  border-radius: 4px;
-  color: #fff;
+  border-radius: 6px;
   cursor: pointer;
-  margin-right: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-right: 6px;
+  transition: all 0.2s ease;
 }
 
-/* 核准按鈕 */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button:last-child {
+  margin-right: 0;
+}
+
+/* Approve Button */
 .approve {
-  background-color: #3d87e5;
+  background-color: #d1eddd;
+  color: #155724;
 }
 
-/* 駁回按鈕 */
+.approve:hover {
+  background-color: #b8e0c4;
+  transform: translateY(-1px);
+}
+
+/* Deny Button */
 .denied {
-  background-color: #e54c4f;
+  background-color: #f8d7da;
+  color: #721c24;
 }
 
-/* 黑名單按鈕 */
+.denied:hover {
+  background-color: #f1c1c5;
+  transform: translateY(-1px);
+}
+
+/* Blacklist Button - Less prominent */
 .blacklist {
-  background-color: #444;
+  background-color: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
 }
 
-/* 用途按鈕 */
+.blacklist:hover {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  transform: translateY(-1px);
+}
+
+/* Purpose/Details Button */
 .purpose {
-  background-color: #dcdddf;
-  color: #666;
+  background-color: #e9ecef;
+  color: #495057;
 }
 
-/* ---------- 輸入理由彈窗樣式 ---------- */
+.purpose:hover {
+  background-color: #dee2e6;
+  transform: translateY(-1px);
+}
+
+/* Modal Overlay */
 .modalOverlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.4); /* 半透明背景 */
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000; /* 保證在最上層 */
+  z-index: 1000;
+  backdrop-filter: blur(2px);
 }
 
+/* Reason Modal */
 .modal {
   background-color: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  width: 400px;
-  max-width: 100%;
+  padding: 25px;
+  border-radius: 15px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: modalFadeIn 0.2s ease-out;
 }
 
-/* 輸入框 */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15px;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
 .modal textarea {
   width: 100%;
   margin-top: 10px;
+  padding: 12px;
   resize: none;
-  font-size: 16px;
-  border: solid 1px #ccc;
+  font-size: 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.modal textarea:focus {
+  outline: none;
+  border-color: #4a5568;
+  box-shadow: 0 0 0 3px rgba(74, 85, 104, 0.1);
 }
 
 .modalButtons {
   display: flex;
   justify-content: flex-end;
-  margin-top: 10px;
+  margin-top: 20px;
   gap: 10px;
 }
 
 .modalButtons button {
-  background-color: #dcdddf;
-  color: #666;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 500;
 }
 
-/* ---------- 詳細資訊彈窗樣式 ---------- */
+.modalButtons button:first-child {
+  background-color: #4a5568;
+  color: #fff;
+}
+
+.modalButtons button:first-child:hover {
+  background-color: #2d3748;
+}
+
+.modalButtons button:last-child {
+  background-color: #e5e7eb;
+  color: #4b5563;
+}
+
+.modalButtons button:last-child:hover {
+  background-color: #d1d5db;
+}
+
+/* Detail Modal */
 .detail-content {
   color: #333;
   background-color: white;
   border-radius: 15px;
   max-width: 800px;
   width: 90%;
-  max-height: 80vh;
+  max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: modalFadeIn 0.2s ease-out;
 }
 
 .detail-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 30px;
-  border-bottom: 1px solid #eee;
+  padding: 20px 25px;
+  border-bottom: 1px solid #e5e7eb;
   background-color: #f8f9fa;
   border-radius: 15px 15px 0 0;
+  position: sticky;
+  top: 0;
 }
 
 .detail-header h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .close-btn {
   background: none;
   border: none;
-  font-size: 30px;
-  color: #999;
+  font-size: 28px;
+  color: #9ca3af;
   cursor: pointer;
   padding: 0;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  margin: 0;
 }
+
 .close-btn:hover {
-  background-color: #f0f0f0;
+  background-color: #e5e7eb;
+  color: #4b5563;
 }
 
 .detail-body {
-  padding: 30px;
+  padding: 25px;
 }
+
 .detail-section {
-  margin-bottom: 30px;
+  margin-bottom: 25px;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
 }
 
 .detail-section h3 {
   margin-bottom: 15px;
-  font-size: 20px;
-  border-bottom: 2px solid #ccc;
-  padding-bottom: 5px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #4a5568;
+  padding-bottom: 8px;
 }
+
 .detail-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 15px;
+  gap: 12px;
 }
+
 .detail-item {
   display: flex;
   flex-direction: column;
-  padding: 10px;
+  padding: 12px;
   background-color: #f8f9fa;
   border-radius: 8px;
 }
+
 .detail-item.full-width {
   grid-column: 1 / -1;
 }
+
 .detail-item .label {
-  font-weight: bold;
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 5px;
-}
-.detail-item .value {
-  color: #333;
-  font-size: 16px;
-  word-wrap: break-word;
-}
-.reason-content {
-  text-align: left;
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 4px;
 }
 
-/* --------- 手機版 RWD --------- */
+.detail-item .value {
+  color: #333;
+  font-size: 15px;
+  word-wrap: break-word;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  /* 統計區改直排 */
+  .stats,
+  .review,
+  .reviewed {
+    padding: 20px;
+    margin-bottom: 15px;
+  }
+
   .data {
     flex-direction: column;
     align-items: flex-start;
-    gap: 5px;
+    gap: 8px;
   }
 
   .divider {
-    display: none; /* 手機就不要顯示分隔線 */
+    display: none;
   }
 
-  /* 表格支援橫向捲動 */
   table {
     display: block;
     overflow-x: auto;
     white-space: nowrap;
   }
 
-  /* 操作按鈕：堆疊顯示 */
   td button {
     display: block;
     width: 100%;
-    margin: 5px 0;
+    margin: 4px 0;
   }
 
-  /* 彈窗寬度調整 */
   .modal {
-    width: 80%;
-    padding: 15px;
+    width: 90%;
+    padding: 20px;
   }
 
-  /* 彈窗按鈕改直排 */
   .modalButtons {
     flex-direction: column;
   }
 
   .modalButtons button {
     width: 100%;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-header {
+    padding: 15px 20px;
+  }
+
+  .detail-body {
+    padding: 20px;
   }
 }
 </style>

@@ -1,11 +1,15 @@
 <script setup>
 import { RouterView } from 'vue-router'
-import NavBar from './components/NavBar.vue'
+import NavBar from '@/components/NavBar.vue'
 import footerBar from './components/footerBar.vue'
+import ToastNotification from '@/components/ToastNotification.vue'
 </script>
 
 <template>
-  <NavBar />
+  <header>
+    <NavBar />
+  </header>
+  <ToastNotification />
   <div class="main-content">
     <RouterView />
   </div>
