@@ -289,6 +289,7 @@ const submitForm = async () => {
       user_id: userId,
       classroom_id: form.classroom,
       borrow_type: form.borrowType,
+      repeat_frequency: form.borrowType === '多次借用' ? form.repeatType : null,
       start_date: form.borrowType === '多次借用' ? form.multiStartDate : form.date,
       end_date: form.borrowType === '多次借用' ? form.multiEndDate : null,
       start_time: formatTime(form.startTime),

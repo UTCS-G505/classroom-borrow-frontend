@@ -123,6 +123,7 @@ const fetchRecords = async () => {
         rejectReason: item.reject_reason,
         multiStartDate: item.borrow_type === '多次借用' ? formatDate(item.start_date) : null,
         multiEndDate: item.borrow_type === '多次借用' ? formatDate(item.end_date) : null,
+        repeatType: item.repeat_frequency || '',
       }
       records.push(record)
     })
