@@ -1,7 +1,7 @@
 <script setup>
-import axios from 'axios'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { scheduleApi } from '@/api/schedule.api'
 
 const router = useRouter()
 
@@ -76,9 +76,82 @@ const selectedRoom = ref('G312')
 const weekOffset = ref(0)
 const scheduleData = ref({})
 const error = ref('')
+const isLoading = ref(false)
 
 const weekDates = computed(() => getWeekDates(weekOffset.value))
 const schedule = computed(() => scheduleData.value[selectedRoom.value] || {})
+
+async function fetchSchedule(classroomId = selectedRoom.value) {
+  isLoading.value = true
+  error.value = ''
+  try {
+    const dates = getWeekDates(weekOffset.value)
+    const startDate = getDateKey(dates[0])
+    const endDate = getDateKey(dates[6])
+
+    const response = await scheduleApi.getClassroomScheduleRange(startDate, endDate, classroomId)
+    const data = response.data || []
+
+    console.log(data)
+
+    // Transform data to { roomId: { date: { timeSlot: eventName } } }
+    const transformedData = {}
+
+    data.forEach((item) => {
+      // Handle both possible structures (item or item.data if nested)
+      // The API typically returns plain objects
+
+      const roomId = item.classroom_id
+      const dateKey = item.date.split('T')[0]
+      const eventName = item.event_name
+
+      if (!transformedData[roomId]) transformedData[roomId] = {}
+      if (!transformedData[roomId][dateKey]) transformedData[roomId][dateKey] = {}
+
+      const [startTime, endTime] = item.time_slot.split('-')
+      const startHour = parseInt(startTime.split(':')[0])
+      const endHour = parseInt(endTime.split(':')[0])
+
+      timeSlots.forEach((slot) => {
+        const slotStart = parseInt(slot.split('-')[0].split(':')[0])
+        if (slotStart >= startHour && slotStart < endHour) {
+          transformedData[roomId][dateKey][slot] = eventName
+        }
+      })
+    })
+
+    // Update scheduleData
+    if (!scheduleData.value[classroomId]) {
+      scheduleData.value[classroomId] = {}
+    }
+
+    // Merge new data
+    // First clear existing data for this range to avoid stale entries if implementation detail changes
+    // But here we are building a cache. Let's merge deep.
+    // Actually, to handle updates properly, we should populate the fetched range.
+
+    // For simplicity and matching previous logic:
+    Object.keys(transformedData).forEach((roomId) => {
+      if (!scheduleData.value[roomId]) scheduleData.value[roomId] = {}
+      Object.keys(transformedData[roomId]).forEach((dateKey) => {
+        scheduleData.value[roomId][dateKey] = {
+          ...scheduleData.value[roomId][dateKey],
+          ...transformedData[roomId][dateKey],
+        }
+      })
+    })
+  } catch (err) {
+    error.value = '讀取課表資料失敗'
+    console.error(err)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Watch for room or week changes to reload schedule
+watch([selectedRoom, weekOffset], () => {
+  fetchSchedule()
+})
 
 function isSelected(dateKey, tIdx) {
   return selectionState.value.dateKey === dateKey && selectionState.value.indices.includes(tIdx)
@@ -110,78 +183,6 @@ const selectedTimeRangeDisplay = computed(() => {
 
   return `${start}-${end}(${arr.length}節)`
 })
-
-async function fetchSchedule(classroomId = selectedRoom.value) {
-  try {
-    const dates = getWeekDates(weekOffset.value)
-    // 取得上一週的第一天 與 下一週的最後一天
-    const startDate = new Date(dates[0])
-    startDate.setDate(startDate.getDate() - 7)
-
-    const endDate = new Date(dates[6])
-    endDate.setDate(endDate.getDate() + 7)
-
-    const startStr = getDateKey(startDate)
-    const endStr = getDateKey(endDate)
-
-    const response = await axios.get(
-      `http://localhost:3000/bookings/schedule/?classroom_id=${classroomId}&start_date=${startStr}&end_date=${endStr}`,
-    )
-    const data = response.data
-
-    // 將 API 回傳的陣列資料轉換成前端需要的格式
-    // 格式: { classroom_id: { date: { timeSlot: eventName } } }
-    const transformedData = {}
-
-    data.forEach((item) => {
-      const roomId = item.classroom_id
-      // 從 ISO 日期字串取得日期部分 (YYYY-MM-DD)
-      const dateKey = item.date.split('T')[0]
-      const eventName = item.event_name
-
-      // 初始化教室
-      if (!transformedData[roomId]) {
-        transformedData[roomId] = {}
-      }
-      // 初始化日期
-      if (!transformedData[roomId][dateKey]) {
-        transformedData[roomId][dateKey] = {}
-      }
-
-      // 解析時段並對應到前端的 timeSlots 格式
-      // API 回傳格式: "13:00:00-15:00:00"
-      // 前端格式: "13:10-14:00", "14:10-15:00" 等
-      const [startTime, endTime] = item.time_slot.split('-')
-      const startHour = parseInt(startTime.split(':')[0])
-      const endHour = parseInt(endTime.split(':')[0])
-
-      // 將時段對應到前端的 timeSlots
-      timeSlots.forEach((slot) => {
-        const slotStart = parseInt(slot.split('-')[0].split(':')[0])
-        // 如果該節次在預約的時間範圍內，就標記為已預約
-        if (slotStart >= startHour && slotStart < endHour) {
-          transformedData[roomId][dateKey][slot] = eventName
-        }
-      })
-    })
-
-    // 合併新資料到現有資料（深度合併）
-    Object.keys(transformedData).forEach((roomId) => {
-      if (!scheduleData.value[roomId]) {
-        scheduleData.value[roomId] = {}
-      }
-      Object.keys(transformedData[roomId]).forEach((dateKey) => {
-        scheduleData.value[roomId][dateKey] = {
-          ...scheduleData.value[roomId][dateKey],
-          ...transformedData[roomId][dateKey],
-        }
-      })
-    })
-  } catch (err) {
-    error.value = '讀取課表資料失敗'
-    console.error(err)
-  }
-}
 
 onMounted(() => {
   fetchSchedule()
@@ -252,8 +253,7 @@ function gotoIntroductionPage() {
 function selectRoom(id) {
   selectedRoom.value = id
   clearSelection()
-  // 動態查詢該教室的課表
-  fetchSchedule(id)
+  // 動態查詢該教室的課表由 watcher 觸發
 }
 </script>
 

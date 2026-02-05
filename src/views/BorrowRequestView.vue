@@ -3,6 +3,7 @@ import { reactive, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router' // 引入 useRoute
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
+import { bookingsApi } from '@/api/bookings.api'
 
 const route = useRoute() // 獲取當前路由->讀取資料
 const router = useRouter() // 獲取路由實例->導航跳轉
@@ -11,8 +12,9 @@ const authStore = useAuthStore()
 
 // 當前階段 (1, 2, 3)
 const currentStage = ref(1)
+const isSubmitting = ref(false)
 
-const result = reactive({})
+// const result = reactive({})
 
 const form = reactive({
   eventName: '',
@@ -249,104 +251,95 @@ const submitForm = async () => {
     return
   }
 
-  // 2. 複製資料到 result (保留你原本的邏輯)
-  Object.keys(form).forEach((key) => {
-    result[key] = form[key]
-  })
+  if (isSubmitting.value) return
+  isSubmitting.value = true
 
-  // 3. 呼叫後端 API
   try {
-    // 判斷要傳送的日期 (單次用 date, 多次用 multiStartDate)
-    const apiDate = result.borrowType === '多次借用' ? result.multiStartDate : result.date
+    // Get user_id from user profile
+    const userId = userStore.userId.value
 
-    const response = await fetch('/api/borrow', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        // --- 欄位對應 ---
-        userEmail: result.borrowerEmail, // 前端 borrowerEmail -> 後端 userEmail
-        teacherEmail: result.teacherEmail, // 前端 teacherEmail -> 後端 teacherEmail
-        classroom: result.classroom,
-        date: apiDate,
-        time: `${result.startTime} - ${result.endTime}`,
-        activityName: result.eventName, // 前端 eventName -> 後端 activityName
-      }),
-    })
+    if (!userId) {
+      alert('無法取得用戶資訊，請重新登入')
+      router.push('/login')
+      return
+    }
 
-    const apiResult = await response.json()
-
-    if (response.ok) {
-      // --- 成功 ---
-      console.log('送出資料：', result)
-      alert(`申請成功！\n${apiResult.message}`) // 顯示後端回傳的成功訊息
-
-      // 清空表單資料
-      Object.keys(form).forEach((key) => {
-        form[key] = ''
-      })
-      Object.keys(errors).forEach((key) => {
-        errors[key] = ''
-      })
-
-      // --- 執行路由跳轉 (移到成功之後才跳轉) ---
-      if (result.borrowType === '多次借用') {
-        router.push({
-          path: '/record',
-          query: {
-            multiStartDate: result.multiStartDate,
-            multiEndDate: result.multiEndDate,
-            room: result.classroom,
-            startTime: result.startTime,
-            endTime: result.endTime,
-            eventName: result.eventName,
-            peopleCount: result.peopleCount,
-            borrowType: result.borrowType,
-            repeatType: result.repeatType,
-            description: result.description,
-            borrowerName: result.borrowerName,
-            teacherName: result.teacherName,
-            borrowerDepartment: result.borrowerDepartment,
-            teacherDepartment: result.teacherDepartment,
-            borrowerEmail: result.borrowerEmail,
-            teacherEmail: result.teacherEmail,
-            borrowerPhone: result.borrowerPhone,
-            teacherPhone: result.teacherPhone,
-          },
-        })
-      } else {
-        router.push({
-          path: '/record',
-          query: {
-            date: result.date,
-            room: result.classroom,
-            time: `${result.startTime.slice(0, 4)} - ${result.endTime.slice(5, 9)}`,
-            eventName: result.eventName,
-            peopleCount: result.peopleCount,
-            borrowType: result.borrowType,
-            description: result.description,
-            borrowerName: result.borrowerName,
-            teacherName: result.teacherName,
-            borrowerDepartment: result.borrowerDepartment,
-            teacherDepartment: result.teacherDepartment,
-            borrowerEmail: result.borrowerEmail,
-            teacherEmail: result.teacherEmail,
-            borrowerPhone: result.borrowerPhone,
-            teacherPhone: result.teacherPhone,
-          },
-        })
+    // Helper function to convert time format (e.g., "0810-0900" -> "08:10")
+    const formatTime = (timeStr) => {
+      if (!timeStr) return ''
+      const start = timeStr.split('-')[0]
+      if (start.length === 4) {
+        return `${start.slice(0, 2)}:${start.slice(2, 4)}`
       }
+      return start
+    }
+
+    const formatEndTime = (timeStr) => {
+      if (!timeStr) return ''
+      const end = timeStr.split('-')[1]
+      if (end && end.length === 4) {
+        return `${end.slice(0, 2)}:${end.slice(2, 4)}`
+      }
+      return end || ''
+    }
+
+    const bookingData = {
+      user_id: userId,
+      classroom_id: form.classroom,
+      borrow_type: form.borrowType,
+      start_date: form.borrowType === '多次借用' ? form.multiStartDate : form.date,
+      end_date: form.borrowType === '多次借用' ? form.multiEndDate : null,
+      start_time: formatTime(form.startTime),
+      end_time: formatEndTime(form.endTime),
+      event_name: form.eventName,
+      people_count: parseInt(form.peopleCount),
+      teacher_name: form.teacherName,
+      reason: form.description,
+      teacher_department: form.teacherDepartment,
+      teacher_phone: form.teacherPhone,
+      teacher_email: form.teacherEmail,
+      borrower_department: form.borrowerDepartment,
+      borrower_phone: form.borrowerPhone,
+      borrower_email: form.borrowerEmail,
+    }
+
+    const response = await bookingsApi.createBooking(bookingData)
+
+    if (response.status === 200) {
+      // Object.keys(form).forEach((key) => {
+      //   result[key] = form[key]
+      // })
+
+      // // 清空表單資料
+      // Object.keys(form).forEach((key) => {
+      //   form[key] = ''
+      // })
+
+      // 清空錯誤訊息
+      // Object.keys(errors).forEach((key) => {
+      //   errors[key] = ''
+      // })
+
+      // Navigate to records page
+      router.push({ path: '/record' })
 
       // 重置到第一階段
       currentStage.value = 1
-    } else {
-      // --- 失敗 ---
-      alert('❌ 申請失敗：' + apiResult.message)
     }
   } catch (error) {
-    console.error('API Error:', error)
-    alert('連線錯誤，無法寄送申請信，請確認後端服務是否開啟。')
+    console.error('提交失敗:', error)
+    if (error.response?.status === 409) {
+      alert('時段已被預約，請選擇其他時段')
+    } else if (error.response?.status === 401) {
+      alert('請先登入')
+      router.push({ path: '/login' })
+    } else if (error.response?.status === 403) {
+      alert('您沒有權限進行此操作')
+    } else {
+      alert(error.response?.data?.message || '提交失敗，請稍後再試')
+    }
+  } finally {
+    isSubmitting.value = false
   }
 }
 

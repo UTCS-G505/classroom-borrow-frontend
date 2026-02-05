@@ -1,50 +1,117 @@
 import { ref, computed } from 'vue'
-import axios from 'axios'
 import { getJwtExp } from '../utils/getJWTExp.js'
+import { authApi } from '@/api/auth.api'
+import { setAuthTokenGetter, setUnauthorizedHandler } from '@/api/axios'
 
 // In-memory storage for access token
 const accessToken = ref(null)
-const uid = ref(null)
-const user = ref(null)
+const user_id = ref(null) // Unified user_id (SSO UID)
 const refreshTimerId = ref(null)
+const isRefreshing = ref(false)
+let interceptorsInitialized = false
+
+// Initialize interceptors once (outside the composable)
+const initializeInterceptors = (refreshFn) => {
+  if (interceptorsInitialized) return
+  interceptorsInitialized = true
+
+  setAuthTokenGetter(() => accessToken.value)
+  setUnauthorizedHandler(async () => {
+    if (isRefreshing.value) return false
+    const result = await refreshFn()
+    return result.success
+  })
+}
 
 export function useAuthStore() {
-  const isLoggedIn = computed(() => !!accessToken.value && !!uid.value)
+  const isLoggedIn = computed(() => !!accessToken.value && !!user_id.value)
 
-  const setAuth = (token, userId) => {
+  const setAuth = (token, idValue) => {
     accessToken.value = token
-    uid.value = userId
-    // Also store uid in localStorage for persistence
-    if (userId) {
-      localStorage.setItem('uid', userId)
-    }
-  }
+    user_id.value = idValue
 
-  const setUser = (newUser) => {
-    user.value = newUser
+    // Store user_id in localStorage for persistence
+    if (idValue) {
+      localStorage.setItem('user_id', idValue)
+    }
   }
 
   const clearAuth = () => {
     accessToken.value = null
-    uid.value = null
+    user_id.value = null
+    localStorage.removeItem('user_id')
+    // Clear legacy keys if they exist
     localStorage.removeItem('uid')
+    localStorage.removeItem('userId')
+
+    if (refreshTimerId.value) {
+      clearTimeout(refreshTimerId.value)
+      refreshTimerId.value = null
+    }
   }
 
   const getAccessToken = () => {
     return accessToken.value
   }
 
-  const getUid = () => {
-    return uid.value
+  const getUserId = () => {
+    return user_id.value
   }
+
+  const refresh = async () => {
+    // Prevent concurrent refresh attempts
+    if (isRefreshing.value) {
+      return { success: false, message: 'Refresh already in progress' }
+    }
+
+    isRefreshing.value = true
+
+    try {
+      const response = await authApi.refresh()
+
+      if (response.data.success) {
+        const newToken = response.data.data.accessToken
+        accessToken.value = newToken
+
+        // Restore user_id from localStorage if not already set
+        if (!user_id.value) {
+          const storedId = localStorage.getItem('user_id')
+          if (storedId) {
+            user_id.value = storedId
+          } else {
+            // Fallback for migration from old keys
+            const oldUid = localStorage.getItem('uid')
+            if (oldUid) user_id.value = oldUid
+          }
+        }
+
+        scheduleTokenRefresh()
+        console.log('Token refreshed successfully')
+        return { success: true }
+      } else {
+        clearAuth()
+        return { success: false, message: 'Token 刷新失敗' }
+      }
+    } catch (error) {
+      console.error('Token refresh error:', error)
+      clearAuth()
+      return { success: false, message: '發生未預期的錯誤' }
+    } finally {
+      isRefreshing.value = false
+    }
+  }
+
+  // Initialize interceptors with refresh function
+  initializeInterceptors(refresh)
 
   const initializeAuth = async () => {
     if (!accessToken.value) {
-      // Try to load uid from localStorage
-      const storedUid = localStorage.getItem('uid')
-      if (storedUid) {
-        uid.value = storedUid
+      // Try to load user_id from localStorage
+      const storedId = localStorage.getItem('user_id') || localStorage.getItem('uid')
+      if (storedId) {
+        user_id.value = storedId
       }
+
       try {
         console.log('Initializing auth by refreshing token...')
         const refreshResult = await refresh()
@@ -73,14 +140,7 @@ export function useAuthStore() {
     let delay = DEFAULT_DELAY_MS
     if (exp) {
       const msUntilExp = exp * 1000 - Date.now()
-      delay = Math.max(0, msUntilExp - BUFFER_MS)
-    }
-
-    // If already expired or very close, refresh immediately
-    if (delay === 0) {
-      // Small microtask delay to avoid recursive call issues
-      refresh().catch(() => {})
-      return
+      delay = Math.max(10000, msUntilExp - BUFFER_MS) // Minimum 10 seconds delay
     }
 
     refreshTimerId.value = window.setTimeout(() => {
@@ -89,27 +149,17 @@ export function useAuthStore() {
   }
 
   const login = async (account, password) => {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-
     try {
-      const response = await axios.post(
-        API_URL + '/api/login',
-        {
-          account,
-          password,
-        },
-        { withCredentials: true },
-      )
+      const response = await authApi.login(account, password)
 
       if (response.data.success) {
         const userData = response.data.data
-        const userUid = userData.uid
         const token = userData.accessToken
-        const newUser = userData.user
+        // Use user_id from response (or uid, they are same now)
+        const idValue = userData.user?.user_id || userData.uid
 
         // Store auth data in memory
-        setAuth(token, userUid)
-        setUser(newUser)
+        setAuth(token, idValue)
         scheduleTokenRefresh()
 
         return { success: true, data: userData }
@@ -132,35 +182,14 @@ export function useAuthStore() {
     }
   }
 
-  const refresh = async () => {
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-
+  const logout = async () => {
     try {
-      const response = await axios.post(API_URL + '/api/refresh', {}, { withCredentials: true })
-
-      if (response.data.success) {
-        const newToken = response.data.data.accessToken
-        accessToken.value = newToken
-
-        // Restore uid from localStorage if not already set
-        if (!uid.value) {
-          const storedUid = localStorage.getItem('uid')
-          if (storedUid) {
-            uid.value = storedUid
-          }
-        }
-
-        scheduleTokenRefresh()
-        console.log('Token refreshed successfully')
-        return { success: true }
-      } else {
-        clearAuth()
-        return { success: false, message: 'Token 刷新失敗' }
-      }
+      await authApi.logout()
     } catch (error) {
-      console.error('Token refresh error:', error)
+      console.error('Logout error:', error)
+    } finally {
+      // Always clear local auth state regardless of API response
       clearAuth()
-      return { success: false, message: '發生未預期的錯誤' }
     }
   }
 
@@ -171,16 +200,16 @@ export function useAuthStore() {
 
   return {
     accessToken: computed(() => accessToken.value),
-    uid: computed(() => uid.value),
-    user: computed(() => user.value),
+    user_id: computed(() => user_id.value),
     isLoggedIn,
     setAuth,
     clearAuth,
     getAccessToken,
-    getUid,
+    getUserId,
     initializeAuth,
     scheduleTokenRefresh,
     login,
+    logout,
     refresh,
     redirectToSSO,
   }
