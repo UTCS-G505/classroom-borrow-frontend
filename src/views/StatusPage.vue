@@ -2,8 +2,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { scheduleApi } from '@/api/schedule.api'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const classrooms = [
   { id: 'G312', title: 'G312 會議室' },
@@ -45,15 +47,15 @@ const selectionState = ref({
   indices: [],
 })
 
-function getWeekDates(weekOffset = 0) {
+function getWeekDates(dayOffset = 0) {
   const today = new Date()
-  const currentDay = today.getDay()
-  const diff = today.getDate() - currentDay + weekOffset * 7
-  const sunday = new Date(today.setDate(diff))
+  today.setHours(0, 0, 0, 0) // Reset to start of day
+  const startDate = new Date(today)
+  startDate.setDate(today.getDate() + dayOffset * 7) // Offset by weeks (7 days)
   const dates = []
   for (let i = 0; i < 7; i++) {
-    const date = new Date(sunday)
-    date.setDate(sunday.getDate() + i)
+    const date = new Date(startDate)
+    date.setDate(startDate.getDate() + i)
     dates.push(date)
   }
   return dates
@@ -92,8 +94,6 @@ async function fetchSchedule(classroomId = selectedRoom.value) {
     const response = await scheduleApi.getClassroomScheduleRange(startDate, endDate, classroomId)
     const data = response.data || []
 
-    console.log(data)
-
     // Transform data to { roomId: { date: { timeSlot: eventName } } }
     const transformedData = {}
 
@@ -115,7 +115,11 @@ async function fetchSchedule(classroomId = selectedRoom.value) {
       timeSlots.forEach((slot) => {
         const slotStart = parseInt(slot.split('-')[0].split(':')[0])
         if (slotStart >= startHour && slotStart < endHour) {
-          transformedData[roomId][dateKey][slot] = eventName
+          // Store object with name and status
+          transformedData[roomId][dateKey][slot] = {
+            name: eventName,
+            status: item.status,
+          }
         }
       })
     })
@@ -226,15 +230,30 @@ function handleConfirm() {
   const fmtStart = firstSlot.replace(/:/g, '')
   const fmtEnd = lastSlot.replace(/:/g, '')
 
+  const targetQuery = {
+    roomId: selectedRoom.value,
+    date: selectionState.value.dateKey,
+    startTime: fmtStart,
+    endTime: fmtEnd,
+    borrowType: '單次借用',
+  }
+
+  if (!authStore.isLoggedIn.value) {
+    const targetFullPath = router.resolve({
+      path: '/borrow',
+      query: targetQuery,
+    }).fullPath
+
+    router.push({
+      path: '/login',
+      query: { redirect: targetFullPath },
+    })
+    return
+  }
+
   router.push({
     path: '/borrow',
-    query: {
-      roomId: selectedRoom.value,
-      date: selectionState.value.dateKey,
-      startTime: fmtStart, // 傳送格式化後的完整時段字串
-      endTime: fmtEnd, // 傳送格式化後的完整時段字串
-      borrowType: '單次借用',
-    },
+    query: targetQuery,
   })
 }
 
@@ -295,6 +314,23 @@ function selectRoom(id) {
           <span class="viewLabel" @click="gotoIntroductionPage()">查看教室</span>
         </div>
 
+        <div class="statusLegend">
+          <div class="legendItem">
+            <span class="legendColor pending"></span>
+            <span class="legendText">審核中</span>
+          </div>
+
+          <div class="legendItem">
+            <span class="legendColor approved"></span>
+            <span class="legendText">已借出</span>
+          </div>
+
+          <div class="legendItem">
+            <span class="legendColor course"></span>
+            <span class="legendText">課程使用</span>
+          </div>
+        </div>
+
         <div v-if="error" class="errorMessage">{{ error }}</div>
 
         <div class="tableWrapper">
@@ -314,7 +350,7 @@ function selectRoom(id) {
                   :key="idx"
                   :class="{ todayColumn: getDateKey(date) === todayKey }"
                 >
-                  <div>{{ weekDays[idx] }}</div>
+                  <div>{{ weekDays[date.getDay()] }}</div>
                   <div class="dateText">{{ formatDate(date) }}</div>
                 </th>
                 <th class="arrowCell">
@@ -350,8 +386,17 @@ function selectRoom(id) {
                     toggleSlot(date, tIdx)
                   "
                 >
-                  <div v-if="schedule[getDateKey(date)]?.[time]" class="event">
-                    {{ schedule[getDateKey(date)][time] }}
+                  <div
+                    v-if="schedule[getDateKey(date)]?.[time]"
+                    class="event"
+                    :class="{
+                      pending: schedule[getDateKey(date)][time].status === '審核中',
+                      'teacher-approved': schedule[getDateKey(date)][time].status === '教師核准',
+                      approved: schedule[getDateKey(date)][time].status === '已預約',
+                      course: schedule[getDateKey(date)][time].status === '課程使用',
+                    }"
+                  >
+                    {{ schedule[getDateKey(date)][time].name }}
                   </div>
 
                   <div v-else-if="!isSelected(getDateKey(date), tIdx)" class="emptySlot">+</div>
@@ -632,8 +677,66 @@ th.todayColumn::after {
   color: #333;
   overflow: hidden;
   text-overflow: ellipsis;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
+}
+
+.event.pending {
+  background-color: #e0f2fe; /* light blue */
+  color: #0369a1;
+  border-left: 3px solid #0ea5e9;
+}
+
+.event.teacher-approved {
+  background-color: #f3e8ff; /* light purple */
+  color: #7e22ce;
+  border-left: 3px solid #a855f7;
+}
+
+.event.approved {
+  background-color: #dcfce7; /* light green */
+  color: #15803d;
+  border-left: 3px solid #22c55e;
+}
+
+/* ===== 借用狀態說明 ===== */
+.statusLegend {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+  align-items: center;
+  font-size: 14px;
+  color: #444;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendColor {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+/* 與 event 狀態顏色一致 */
+.legendColor.pending {
+  background-color: #e0f2fe;
+  border-left: 3px solid #0ea5e9;
+}
+
+.legendColor.approved {
+  background-color: #dcfce7;
+  border-left: 3px solid #22c55e;
+}
+
+.legendColor.course {
+  background-color: #ffedd5;
+  border-left: 3px solid #f97316;
 }
 
 .navigation {
