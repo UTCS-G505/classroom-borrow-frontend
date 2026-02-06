@@ -3,12 +3,14 @@ import { reactive, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router' // 引入 useRoute
 import { useUserStore } from '@/stores/user'
 import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 import { bookingsApi } from '@/api/bookings.api'
 
 const route = useRoute() // 獲取當前路由->讀取資料
 const router = useRouter() // 獲取路由實例->導航跳轉
 const userStore = useUserStore()
 const authStore = useAuthStore()
+const toastStore = useToastStore()
 
 // 當前階段 (1, 2, 3)
 const currentStage = ref(1)
@@ -218,13 +220,13 @@ const nextStage = () => {
   if (currentStage.value === 1) {
     canProceed = validateStage1()
     if (!canProceed) {
-      alert('請完成基本借用資訊！')
+      toastStore.showToast('請完成基本借用資訊！', 'warning')
       return
     }
   } else if (currentStage.value === 2) {
     canProceed = validateStage2()
     if (!canProceed) {
-      alert('請完成活動資訊！')
+      toastStore.showToast('請完成活動資訊！', 'warning')
       return
     }
   }
@@ -247,7 +249,7 @@ const prevStage = () => {
 const submitForm = async () => {
   // 1. 驗證表單
   if (!validateStage3()) {
-    alert('請修正表單中的錯誤！')
+    toastStore.showToast('請修正表單中的錯誤！', 'warning')
     return
   }
 
@@ -259,7 +261,7 @@ const submitForm = async () => {
     const userId = userStore.userId.value
 
     if (!userId) {
-      alert('無法取得用戶資訊，請重新登入')
+      toastStore.showToast('無法取得用戶資訊，請重新登入', 'error')
       router.push('/login')
       return
     }
@@ -287,6 +289,7 @@ const submitForm = async () => {
       user_id: userId,
       classroom_id: form.classroom,
       borrow_type: form.borrowType,
+      repeat_frequency: form.borrowType === '多次借用' ? form.repeatType : null,
       start_date: form.borrowType === '多次借用' ? form.multiStartDate : form.date,
       end_date: form.borrowType === '多次借用' ? form.multiEndDate : null,
       start_time: formatTime(form.startTime),
@@ -301,6 +304,7 @@ const submitForm = async () => {
       borrower_department: form.borrowerDepartment,
       borrower_phone: form.borrowerPhone,
       borrower_email: form.borrowerEmail,
+      borrower_name: form.borrowerName,
     }
 
     const response = await bookingsApi.createBooking(bookingData)
@@ -321,6 +325,7 @@ const submitForm = async () => {
       // })
 
       // Navigate to records page
+      toastStore.showToast('借用申請已提交', 'success')
       router.push({ path: '/record' })
 
       // 重置到第一階段
@@ -329,14 +334,20 @@ const submitForm = async () => {
   } catch (error) {
     console.error('提交失敗:', error)
     if (error.response?.status === 409) {
-      alert('時段已被預約，請選擇其他時段')
+      toastStore.showToast('時段已被預約，請選擇其他時段', 'error')
     } else if (error.response?.status === 401) {
-      alert('請先登入')
+      toastStore.showToast('請先登入', 'error')
       router.push({ path: '/login' })
     } else if (error.response?.status === 403) {
-      alert('您沒有權限進行此操作')
+      // Check if this is a blacklist error
+      const errorData = error.response?.data
+      if (errorData?.reason) {
+        toastStore.showToast(`您目前在黑名單中，無法借用。原因：${errorData.reason}`, 'error')
+      } else {
+        toastStore.showToast(errorData?.error || '您沒有權限進行此操作', 'error')
+      }
     } else {
-      alert(error.response?.data?.message || '提交失敗，請稍後再試')
+      toastStore.showToast(error.response?.data?.message || '提交失敗，請稍後再試', 'error')
     }
   } finally {
     isSubmitting.value = false
@@ -390,17 +401,24 @@ watch(
   { deep: true },
 )
 
+// 標記是否已自動填充過
+const isAutoFilled = ref(false)
+
 // 自動填充借用人資訊的函數
 const autoFillBorrowerInfo = () => {
-  if (userStore.profile) {
+  // Check userStore.profile.value to ensure data is present
+  if (userStore.profile.value && !isAutoFilled.value) {
+    // Set flag immediately to prevent race conditions
+    isAutoFilled.value = true
+
     if (!form.borrowerName) {
-      form.borrowerName = userStore.username || ''
+      form.borrowerName = userStore.username.value || ''
     }
     if (!form.borrowerEmail) {
-      form.borrowerEmail = userStore.primary_email || ''
+      form.borrowerEmail = userStore.email.value || ''
     }
     if (!form.borrowerPhone) {
-      form.borrowerPhone = userStore.phone_number || ''
+      form.borrowerPhone = userStore.phone_number.value || ''
     }
     if (!form.borrowerDepartment) {
       form.borrowerDepartment =
@@ -720,7 +738,20 @@ const autoFillBorrowerInfo = () => {
     <div class="navigation-buttons">
       <button v-if="currentStage > 1" @click="prevStage" class="btn-prev">上一步</button>
       <button v-if="currentStage < 3" @click="nextStage" class="btn-next">下一步</button>
-      <button v-if="currentStage === 3" @click="submitForm" class="btn-submit">送出申請</button>
+      <button
+        v-if="currentStage === 3"
+        @click="submitForm"
+        class="btn-submit"
+        :disabled="isSubmitting"
+      >
+        {{ isSubmitting ? '提交中...' : '送出申請' }}
+      </button>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div v-if="isSubmitting" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">正在提交申請...</p>
     </div>
   </div>
 </template>
@@ -730,6 +761,7 @@ const autoFillBorrowerInfo = () => {
   max-width: 1000px;
   margin: 40px auto;
   color: #666;
+  position: relative;
 }
 .borrow-view h1 {
   font-size: 30px;
@@ -740,6 +772,44 @@ const autoFillBorrowerInfo = () => {
   color: red;
   font-size: 15px;
   margin-top: 5px;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  margin-top: 16px;
+  font-size: 16px;
+  color: #4b5563;
+  font-weight: 500;
 }
 
 /* 階段指示器樣式 */
@@ -842,12 +912,13 @@ label {
 }
 
 input {
-  height: 30px;
+  height: 50px;
   background-color: #f0f0f0;
   padding: 10px;
   font-size: 21px;
   border: 1px solid #aaaaaa;
   border-radius: 10px;
+  box-sizing: border-box;
 }
 
 input[type='radio'] {
@@ -897,6 +968,7 @@ select {
   font-size: 21px;
   border: 1px solid #aaaaaa;
   border-radius: 10px;
+  box-sizing: border-box;
 }
 
 textarea {

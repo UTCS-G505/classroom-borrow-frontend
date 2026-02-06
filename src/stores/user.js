@@ -9,9 +9,9 @@ export function useUserStore() {
   const authStore = useAuthStore()
 
   const username = computed(() => userProfile.value?.name || userProfile.value?.account || '')
-  const primary_email = computed(() => userProfile.value?.primary_email || '')
+  const email = computed(() => userProfile.value?.email || '')
   const phone_number = computed(() => userProfile.value?.phone_number || '')
-  const role = computed(() => userProfile.value?.role || '')
+  const role = computed(() => userProfile.value?.role ?? 6)
   const position = computed(() => userProfile.value?.position || '')
   const profile = computed(() => userProfile.value)
   const isLoading = computed(() => isLoadingProfile.value)
@@ -53,7 +53,7 @@ export function useUserStore() {
 
   return {
     username,
-    primary_email,
+    email,
     phone_number,
     role,
     profile,

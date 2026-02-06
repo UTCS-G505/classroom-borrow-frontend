@@ -45,10 +45,10 @@ export const bookingsApi = {
    * @param {string} [bookingData.borrower_department] - Borrower's department
    * @param {string} [bookingData.borrower_phone] - Borrower's phone
    * @param {string} [bookingData.borrower_email] - Borrower's email
+   * @param {string} bookingData.borrower_name - Borrower's name
    * @returns {Promise} Response with message and request_id
    */
   createBooking: (bookingData) => {
-    console.log('Creating booking with data:', bookingData)
     return apiClient.post('/bookings/', bookingData)
   },
 
@@ -68,6 +68,30 @@ export const bookingsApi = {
    */
   returnBooking: (id) => {
     return apiClient.put(`/bookings/${id}/return`)
+  },
+
+  /**
+   * Teacher sign-off a booking request
+   * @param {Object} data - Signoff data
+   * @param {number} data.id - Booking request ID
+   * @param {string} data.status - New status ("核准" or "退件")
+   * @param {string} [data.comment] - Rejection reason or comment
+   * @returns {Promise} Response
+   */
+  teacherSignoff: (data) => {
+    return apiClient.post('/bookings/signoff', data)
+  },
+
+  /**
+   * TA sign-off a booking request
+   * @param {Object} data - Signoff data
+   * @param {string} data.id - Booking public ID
+   * @param {string} data.status - New status ("核准" or "退件")
+   * @param {string} [data.reject_reason] - Rejection reason
+   * @returns {Promise} Response
+   */
+  taSignoff: (data) => {
+    return apiClient.post('/bookings/ta-signoff', data)
   },
 }
 

@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { getJwtExp } from '../utils/getJWTExp.js'
 import { authApi } from '@/api/auth.api'
 import { setAuthTokenGetter, setUnauthorizedHandler } from '@/api/axios'
@@ -9,6 +9,27 @@ const user_id = ref(null) // Unified user_id (SSO UID)
 const refreshTimerId = ref(null)
 const isRefreshing = ref(false)
 let interceptorsInitialized = false
+let activeRefreshPromise = null
+
+const isInitialized = ref(false)
+const ensureInitialized = () => {
+  return new Promise((resolve) => {
+    if (isInitialized.value) {
+      resolve()
+    } else {
+      const unwatch = watch(
+        isInitialized,
+        (newValue) => {
+          if (newValue) {
+            unwatch()
+            resolve()
+          }
+        },
+        { immediate: true },
+      )
+    }
+  })
+}
 
 // Initialize interceptors once (outside the composable)
 const initializeInterceptors = (refreshFn) => {
@@ -17,7 +38,7 @@ const initializeInterceptors = (refreshFn) => {
 
   setAuthTokenGetter(() => accessToken.value)
   setUnauthorizedHandler(async () => {
-    if (isRefreshing.value) return false
+    // Rely on refreshFn (refresh) to handle concurrency via shared promise
     const result = await refreshFn()
     return result.success
   })
@@ -59,46 +80,51 @@ export function useAuthStore() {
   }
 
   const refresh = async () => {
-    // Prevent concurrent refresh attempts
-    if (isRefreshing.value) {
-      return { success: false, message: 'Refresh already in progress' }
+    // Return existing promise if refresh is already in progress
+    if (activeRefreshPromise) {
+      return activeRefreshPromise
     }
 
     isRefreshing.value = true
 
-    try {
-      const response = await authApi.refresh()
+    activeRefreshPromise = (async () => {
+      try {
+        const response = await authApi.refresh()
 
-      if (response.data.success) {
-        const newToken = response.data.data.accessToken
-        accessToken.value = newToken
+        if (response.data.success) {
+          const newToken = response.data.data.accessToken
+          accessToken.value = newToken
 
-        // Restore user_id from localStorage if not already set
-        if (!user_id.value) {
-          const storedId = localStorage.getItem('user_id')
-          if (storedId) {
-            user_id.value = storedId
-          } else {
-            // Fallback for migration from old keys
-            const oldUid = localStorage.getItem('uid')
-            if (oldUid) user_id.value = oldUid
+          // Restore user_id from localStorage if not already set
+          if (!user_id.value) {
+            const storedId = localStorage.getItem('user_id')
+            if (storedId) {
+              user_id.value = storedId
+            } else {
+              // Fallback for migration from old keys
+              const oldUid = localStorage.getItem('uid')
+              if (oldUid) user_id.value = oldUid
+            }
           }
-        }
 
-        scheduleTokenRefresh()
-        console.log('Token refreshed successfully')
-        return { success: true }
-      } else {
+          scheduleTokenRefresh()
+          console.log('Token refreshed successfully')
+          return { success: true }
+        } else {
+          clearAuth()
+          return { success: false, message: 'Token 刷新失敗' }
+        }
+      } catch (error) {
+        console.error('Token refresh error:', error)
         clearAuth()
-        return { success: false, message: 'Token 刷新失敗' }
+        return { success: false, message: '發生未預期的錯誤' }
+      } finally {
+        isRefreshing.value = false
+        activeRefreshPromise = null
       }
-    } catch (error) {
-      console.error('Token refresh error:', error)
-      clearAuth()
-      return { success: false, message: '發生未預期的錯誤' }
-    } finally {
-      isRefreshing.value = false
-    }
+    })()
+
+    return activeRefreshPromise
   }
 
   // Initialize interceptors with refresh function
@@ -122,6 +148,7 @@ export function useAuthStore() {
         clearAuth()
       }
     }
+    isInitialized.value = true
   }
 
   const scheduleTokenRefresh = () => {
@@ -202,6 +229,8 @@ export function useAuthStore() {
     accessToken: computed(() => accessToken.value),
     user_id: computed(() => user_id.value),
     isLoggedIn,
+    isInitialized: computed(() => isInitialized.value),
+    ensureInitialized,
     setAuth,
     clearAuth,
     getAccessToken,

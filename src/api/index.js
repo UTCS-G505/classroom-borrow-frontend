@@ -10,7 +10,6 @@ export { authApi } from './auth.api'
 export { bookingsApi } from './bookings.api'
 export { classroomsApi } from './classrooms.api'
 export { scheduleApi } from './schedule.api'
-export { announcementsApi } from './announcements.api'
 export { adminApi } from './admin.api'
 export { usersApi } from './users.api'
 
@@ -20,7 +19,6 @@ export default {
   bookings: () => import('./bookings.api').then((m) => m.bookingsApi),
   classrooms: () => import('./classrooms.api').then((m) => m.classroomsApi),
   schedule: () => import('./schedule.api').then((m) => m.scheduleApi),
-  announcements: () => import('./announcements.api').then((m) => m.announcementsApi),
   admin: () => import('./admin.api').then((m) => m.adminApi),
   users: () => import('./users.api').then((m) => m.usersApi),
 }
