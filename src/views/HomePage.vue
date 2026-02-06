@@ -1,6 +1,8 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { getAnnouncements } from '../api/announcements'
+import dayjs from 'dayjs'
 
 //按鈕相關
 const link = ref([
@@ -77,6 +79,24 @@ function changePage(link) {
 }
 
 const router = useRouter()
+const announcements = ref([])
+
+onMounted(async () => {
+  try {
+    const res = await getAnnouncements()
+    // Filter out expired announcements
+    announcements.value = res.data.filter((item) => {
+      if (!item.expired_at) return true
+      return dayjs().isBefore(dayjs(item.expired_at).endOf('day'))
+    })
+  } catch (err) {
+    console.error('Failed to load announcements', err)
+  }
+})
+
+const formatDate = (date) => {
+  return dayjs(date).format('YYYY-MM-DD')
+}
 </script>
 
 <template>
@@ -96,6 +116,20 @@ const router = useRouter()
     </div>
 
     <div class="interval">
+      <br />
+    </div>
+
+    <!-- 公告區塊 -->
+    <div v-if="announcements.length > 0" class="announcements-section">
+      <h3>最新公告</h3>
+      <hr />
+      <div v-for="item in announcements" :key="item.announcement_id" class="announcement-item">
+        <div class="announcement-header">
+          <span class="announcement-date">{{ formatDate(item.created_at) }}</span>
+          <span class="announcement-title">{{ item.title }}</span>
+        </div>
+        <div class="announcement-content">{{ item.content }}</div>
+      </div>
       <br />
     </div>
 
@@ -190,5 +224,47 @@ button:hover {
 .copyright {
   font-size: 10px;
   opacity: 70%;
+}
+
+.announcements-section {
+  text-align: left;
+  margin-bottom: 40px;
+}
+
+.announcement-item {
+  background-color: #ffffff;
+  border-left: 5px solid #c2ddff;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.announcement-header {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.announcement-date {
+  font-size: 0.9em;
+  color: #666;
+  margin-right: 15px;
+  background-color: #eee;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.announcement-title {
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #333;
+}
+
+.announcement-content {
+  color: #555;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  padding-left: 5px;
 }
 </style>
