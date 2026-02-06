@@ -33,17 +33,17 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
+import { useToastStore } from '@/stores/toast'
+import { bookingsApi } from '@/api/bookings.api'
 
 const route = useRoute()
+const toastStore = useToastStore()
 const request = ref(null)
 const loading = ref(true)
 const error = ref('')
 
 const showRejectInput = ref(false)
 const rejectReason = ref('')
-
-const API_BASE = 'http://localhost:3000'
 
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
@@ -58,7 +58,7 @@ const fetchRequest = async () => {
     return
   }
   try {
-    const res = await axios.get(`${API_BASE}/bookings/${id}`)
+    const res = await bookingsApi.getBookingById(id)
     if (res.data && res.data.length > 0) {
       request.value = res.data[0]
     } else {
@@ -74,22 +74,22 @@ const fetchRequest = async () => {
 
 const handleSignoff = async (status) => {
   if (status === '退件' && !rejectReason.value) {
-    alert('請輸入退件理由')
+    toastStore.showToast('請輸入退件理由', 'warning')
     return
   }
 
   try {
-    await axios.post(`${API_BASE}/bookings/signoff`, {
+    await bookingsApi.teacherSignoff({
       id: request.value.request_id,
       status: status,
       comment: rejectReason.value, // Backend expects 'comment' for teacher
     })
-    alert('簽核完成')
+    toastStore.showToast('簽核完成', 'success')
     // Refresh
     location.reload()
   } catch (err) {
     console.error(err)
-    alert('簽核失敗: ' + (err.response?.data?.error || err.message))
+    toastStore.showToast('簽核失敗: ' + (err.response?.data?.error || err.message), 'error')
   }
 }
 

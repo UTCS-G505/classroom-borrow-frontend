@@ -77,4 +77,25 @@ const router = createRouter({
   },
 })
 
+import { useAuthStore } from '@/stores/auth'
+
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+
+  // Wait for auth to initialize (check user login status)
+  await authStore.ensureInitialized()
+
+  const publicPages = ['/login', '/', '/introduction', '/home', '/borrow_status']
+  const authRequired = !publicPages.includes(to.path)
+
+  if (authRequired && !authStore.isLoggedIn.value) {
+    next({
+      path: '/login',
+      query: { redirect: to.fullPath },
+    })
+  } else {
+    next()
+  }
+})
+
 export default router
