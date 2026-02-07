@@ -390,9 +390,15 @@ function selectRoom(id) {
                     v-if="schedule[getDateKey(date)]?.[time]"
                     class="event"
                     :class="{
-                      pending: schedule[getDateKey(date)][time].status === '審核中',
-                      'teacher-approved': schedule[getDateKey(date)][time].status === '教師核准',
+                      /* 藍色：包含 '審核中' 和 '教師核准' */
+                      pending: ['審核中', '教師核准'].includes(
+                        schedule[getDateKey(date)][time].status,
+                      ),
+
+                      /* 綠色：已核准 */
                       approved: schedule[getDateKey(date)][time].status === '已預約',
+
+                      /* (選用) 課程專用樣式 */
                       course: schedule[getDateKey(date)][time].status === '課程使用',
                     }"
                   >
@@ -687,12 +693,6 @@ th.todayColumn::after {
   background-color: #e0f2fe; /* light blue */
   color: #0369a1;
   border-left: 3px solid #0ea5e9;
-}
-
-.event.teacher-approved {
-  background-color: #f3e8ff; /* light purple */
-  color: #7e22ce;
-  border-left: 3px solid #a855f7;
 }
 
 .event.approved {
