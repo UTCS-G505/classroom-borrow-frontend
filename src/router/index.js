@@ -99,20 +99,6 @@ router.afterEach(() => {
   window.scrollTo(0, 0)
   document.documentElement.scrollTop = 0
   document.body.scrollTop = 0
-
-  // 在 DOM 更新後再次重置（確保萬無一失）
-  setTimeout(() => {
-    window.scrollTo(0, 0)
-    document.documentElement.scrollTop = 0
-    document.body.scrollTop = 0
-  }, 0)
-
-  // 再次確保（針對某些延遲渲染的情況）
-  setTimeout(() => {
-    window.scrollTo(0, 0)
-    document.documentElement.scrollTop = 0
-    document.body.scrollTop = 0
-  }, 100)
 })
 
 export default router
