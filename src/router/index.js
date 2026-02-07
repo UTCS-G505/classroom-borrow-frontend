@@ -67,13 +67,8 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
   scrollBehavior(to, from, savedPosition) {
-    // 如果有保存的位置（例如返回上一頁），滾動到保存的位置
-    if (savedPosition) {
-      return savedPosition
-    } else {
-      // 否則滾動到頁面頂部
-      return { top: 0 }
-    }
+    // 強制滾動到頂部
+    return { top: 0, left: 0 }
   },
 })
 
@@ -96,6 +91,28 @@ router.beforeEach(async (to, from, next) => {
   } else {
     next()
   }
+})
+
+// 強制重置滾動位置
+router.afterEach(() => {
+  // 立即重置
+  window.scrollTo(0, 0)
+  document.documentElement.scrollTop = 0
+  document.body.scrollTop = 0
+  
+  // 在 DOM 更新後再次重置（確保萬無一失）
+  setTimeout(() => {
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }, 0)
+  
+  // 再次確保（針對某些延遲渲染的情況）
+  setTimeout(() => {
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }, 100)
 })
 
 export default router
