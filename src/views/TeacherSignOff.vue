@@ -108,7 +108,8 @@ async function handleSignOff(status) {
     }
   } catch (error) {
     console.error('Sign-off failed:', error)
-    toastStore.showToast('系統錯誤', 'error')
+    const errorMessage = error.response?.data?.error || error.response?.data?.message || '系統錯誤'
+    toastStore.showToast(errorMessage, 'error')
   } finally {
     isSubmitting.value = false
   }
