@@ -11,7 +11,7 @@ import ToastNotification from '@/components/ToastNotification.vue'
   </header>
   <ToastNotification />
   <div class="main-content">
-    <RouterView />
+    <RouterView :key="$route.fullPath" />
   </div>
   <footerBar />
 </template>
