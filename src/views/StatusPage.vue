@@ -145,7 +145,7 @@ async function fetchSchedule(classroomId = selectedRoom.value) {
       })
     })
   } catch (err) {
-    error.value = '讀取課表資料失敗'
+    error.value = '課表讀取失敗，請重新整理頁面'
     console.error(err)
   } finally {
     isLoading.value = false
@@ -314,6 +314,23 @@ function selectRoom(id) {
           <span class="viewLabel" @click="gotoIntroductionPage()">查看教室</span>
         </div>
 
+        <div class="statusLegend">
+          <div class="legendItem">
+            <span class="legendColor pending"></span>
+            <span class="legendText">審核中</span>
+          </div>
+
+          <div class="legendItem">
+            <span class="legendColor approved"></span>
+            <span class="legendText">已借出</span>
+          </div>
+
+          <div class="legendItem">
+            <span class="legendColor course"></span>
+            <span class="legendText">課程使用</span>
+          </div>
+        </div>
+
         <div v-if="error" class="errorMessage">{{ error }}</div>
 
         <div class="tableWrapper">
@@ -373,9 +390,16 @@ function selectRoom(id) {
                     v-if="schedule[getDateKey(date)]?.[time]"
                     class="event"
                     :class="{
-                      pending: schedule[getDateKey(date)][time].status === '審核中',
-                      'teacher-approved': schedule[getDateKey(date)][time].status === '教師核准',
+                      /* 藍色：包含 '審核中' 和 '教師核准' */
+                      pending: ['審核中', '教師核准'].includes(
+                        schedule[getDateKey(date)][time].status,
+                      ),
+
+                      /* 綠色：已核准 */
                       approved: schedule[getDateKey(date)][time].status === '已預約',
+
+                      /* (選用) 課程專用樣式 */
+                      course: schedule[getDateKey(date)][time].status === '課程使用',
                     }"
                   >
                     {{ schedule[getDateKey(date)][time].name }}
@@ -671,16 +695,48 @@ th.todayColumn::after {
   border-left: 3px solid #0ea5e9;
 }
 
-.event.teacher-approved {
-  background-color: #f3e8ff; /* light purple */
-  color: #7e22ce;
-  border-left: 3px solid #a855f7;
-}
-
 .event.approved {
   background-color: #dcfce7; /* light green */
   color: #15803d;
   border-left: 3px solid #22c55e;
+}
+
+/* ===== 借用狀態說明 ===== */
+.statusLegend {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+  align-items: center;
+  font-size: 14px;
+  color: #444;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendColor {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+/* 與 event 狀態顏色一致 */
+.legendColor.pending {
+  background-color: #e0f2fe;
+  border-left: 3px solid #0ea5e9;
+}
+
+.legendColor.approved {
+  background-color: #dcfce7;
+  border-left: 3px solid #22c55e;
+}
+
+.legendColor.course {
+  background-color: #ffedd5;
+  border-left: 3px solid #f97316;
 }
 
 .navigation {
