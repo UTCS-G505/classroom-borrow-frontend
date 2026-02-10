@@ -473,7 +473,7 @@ onMounted(() => {
             </div>
             <div class="reason-text">
               <h4>駁回原因：</h4>
-              <p>{{ currentRecord.rejectReason || '管理員介面傳送過來文字' }}</p>
+              <p>{{ currentRecord.rejectReason || '未提供駁回原因' }}</p>
             </div>
           </div>
         </div>
