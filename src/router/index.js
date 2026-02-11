@@ -13,7 +13,7 @@ import TASignOff from '../views/TASignOff.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/home'  // 重定向到首頁
+    redirect: '/home', // 重定向到首頁
   },
   {
     path: '/borrow', // 借用申請頁
