@@ -264,7 +264,7 @@ function clearSelection() {
 
 function gotoIntroductionPage() {
   router.push({
-    name: 'introductionPage',
+    name: 'IntroductionPage',
     query: { roomId: selectedRoom.value },
   })
 }
