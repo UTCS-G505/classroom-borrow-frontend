@@ -15,7 +15,7 @@ const userStore = useUserStore()
 const links = computed(() => {
   return [
     { to: '/home', label: '首頁' },
-    { to: '/borrow_status', label: '教室借用情況' },
+    { to: '/borrow-status', label: '教室借用情況' },
     { to: '/introduction', label: '教室介紹' },
     { to: '/borrow', label: '申請借用' },
     { to: '/record', label: '借用紀錄' },
