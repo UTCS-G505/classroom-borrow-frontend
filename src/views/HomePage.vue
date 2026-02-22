@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAnnouncements } from '../api/announcements'
+import { announcementsApi } from '../api/announcements.api'
 import dayjs from 'dayjs'
 
 //按鈕相關
@@ -83,7 +83,7 @@ const announcements = ref([])
 
 onMounted(async () => {
   try {
-    const res = await getAnnouncements()
+    const res = await announcementsApi.getAllAnnouncements()
     // Filter out expired announcements
     announcements.value = res.data.filter((item) => {
       if (!item.expired_at) return true
