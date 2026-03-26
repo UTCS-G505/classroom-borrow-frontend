@@ -12,6 +12,7 @@ export { classroomsApi } from './classrooms.api'
 export { scheduleApi } from './schedule.api'
 export { adminApi } from './admin.api'
 export { usersApi } from './users.api'
+export { announcementsApi } from './announcements.api'
 
 // Default export with all APIs
 export default {
@@ -21,4 +22,5 @@ export default {
   schedule: () => import('./schedule.api').then((m) => m.scheduleApi),
   admin: () => import('./admin.api').then((m) => m.adminApi),
   users: () => import('./users.api').then((m) => m.usersApi),
+  announcements: () => import('./announcements.api').then((m) => m.announcementsApi),
 }

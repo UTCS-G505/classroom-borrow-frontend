@@ -32,6 +32,34 @@ export const announcementsApi = {
   getAnnouncementById: (id) => {
     return apiClient.get(`/announcements/${id}`)
   },
+
+  /**
+   * Create a new announcement (Admin)
+   * @param {Object} data - Announcement data
+   * @returns {Promise} Response with created announcement
+   */
+  createAnnouncement: (data) => {
+    return apiClient.post('/announcements', data)
+  },
+
+  /**
+   * Update an existing announcement (Admin)
+   * @param {number} id - Announcement ID
+   * @param {Object} data - Updated announcement data
+   * @returns {Promise} Response with updated announcement
+   */
+  updateAnnouncement: (id, data) => {
+    return apiClient.put(`/announcements/${id}`, data)
+  },
+
+  /**
+   * Delete an announcement (Admin)
+   * @param {number} id - Announcement ID
+   * @returns {Promise} Response confirming deletion
+   */
+  deleteAnnouncement: (id) => {
+    return apiClient.delete(`/announcements/${id}`)
+  },
 }
 
 export default announcementsApi
