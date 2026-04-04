@@ -163,10 +163,10 @@ onMounted(fetchBookingData)
 
         <div class="btn-group">
           <button class="btn-approve" :disabled="isSubmitting" @click="openConfirmModal('核准')">
-            {{ isSubmitting ? '最終核准' : '最終核准' }}
+            最終核准
           </button>
           <button class="btn-reject" :disabled="isSubmitting" @click="openConfirmModal('退件')">
-            {{ isSubmitting ? '退回' : '退回' }}
+            退回
           </button>
         </div>
       </div>
