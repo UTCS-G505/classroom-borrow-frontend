@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useToastStore } from '@/stores/toast'
 import adminApi from '../api/admin.api.js'
 
