@@ -171,10 +171,10 @@ onMounted(async () => {
 
         <div class="btn-group">
           <button class="btn-approve" :disabled="isSubmitting" @click="openConfirmModal('核准')">
-            {{ isSubmitting ? '核准' : '核准' }}
+            核准
           </button>
           <button class="btn-reject" :disabled="isSubmitting" @click="openConfirmModal('退件')">
-            {{ isSubmitting ? '退件' : '退件' }}
+            退件
           </button>
         </div>
       </div>
