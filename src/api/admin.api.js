@@ -57,6 +57,44 @@ export const adminApi = {
   removeFromBlacklist: (userId) => {
     return apiClient.delete(`/admin/blacklist/${userId}`)
   },
+
+  // ===== User Management =====
+
+  /**
+   * Get all users with their blacklist status (admin only)
+   * @returns {Promise} Response with array of users
+   */
+  getAllUsers: () => {
+    return apiClient.get('/admin/users')
+  },
+
+  /**
+   * Update user role (admin only)
+   * @param {string} userId - User ID
+   * @param {number} role - New role number
+   * @returns {Promise} Response with message
+   */
+  updateUserRole: (userId, role) => {
+    return apiClient.put(`/admin/users/${userId}/role`, { role })
+  },
+
+  // ===== Schedule Management =====
+
+  getAllSchedules: () => {
+    return apiClient.get('/admin/schedules')
+  },
+
+  importSchedule: (data) => {
+    return apiClient.post('/admin/schedules/import', data)
+  },
+
+  clearSchedules: () => {
+    return apiClient.delete('/admin/schedules/clear')
+  },
+
+  deleteSemesterSchedules: (startDate, endDate) => {
+    return apiClient.delete(`/admin/schedules/semester?start_date=${startDate}&end_date=${endDate}`)
+  },
 }
 
 export default adminApi
