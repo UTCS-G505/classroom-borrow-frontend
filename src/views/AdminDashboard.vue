@@ -2,13 +2,13 @@
 import { ref } from 'vue'
 
 import BorrowReview from './BorrowReview.vue'
-import BlacklistPage from './BlacklistPage.vue'
+import UserManagement from './UserManagement.vue'
 import AdminAnnouncements from './AdminAnnouncements.vue'
 import AdminSchedule from './AdminSchedule.vue'
 
 const links = [
   { label: '借用審核', id: 'borrow-review' },
-  { label: '違規(黑名單)', id: 'blacklist-management' },
+  { label: '用戶管理(含黑名單)', id: 'user-management' },
   { label: '公告管理', id: 'announcements' },
   { label: '課表管理', id: 'schedule-management' },
 ]
@@ -39,7 +39,7 @@ function changePage(id) {
     <!-- 主內容區 -->
     <section class="content">
       <BorrowReview v-if="page === 'borrow-review'" />
-      <BlacklistPage v-else-if="page === 'blacklist-management'" />
+      <UserManagement v-else-if="page === 'user-management'" />
       <AdminAnnouncements v-else-if="page === 'announcements'" />
       <AdminSchedule v-else-if="page === 'schedule-management'" />
     </section>
