@@ -172,23 +172,14 @@ function getWeekdayName(num) {
         </button>
       </div>
 
-      <div
-        class="import-section form-content"
-        style="
-          margin-bottom: 25px;
-          background: #f8f9fa;
-          padding: 20px;
-          border-radius: 8px;
-          border-left: 4px solid #0b6bc8;
-        "
-      >
+      <div class="import-section form-content">
         <h4 style="margin-bottom: 15px; color: #333">匯入新學期課表</h4>
         <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap">
-          <div class="form-group" style="flex: 1; min-width: 200px">
+          <div class="form-group">
             <label>學期開始日期</label>
             <input type="date" v-model="start_date" class="form-input" />
           </div>
-          <div class="form-group" style="flex: 1; min-width: 200px">
+          <div class="form-group">
             <label>學期結束日期</label>
             <input type="date" v-model="end_date" class="form-input" />
           </div>
@@ -359,6 +350,11 @@ tbody tr:hover {
   color: #475569;
   font-weight: 500;
 }
+.form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
 .form-input {
   width: 100%;
   padding: 8px 10px;
@@ -366,6 +362,14 @@ tbody tr:hover {
   border-radius: 6px;
   font-size: 14px;
   background: white;
+}
+
+.import-section {
+  margin-bottom: 25px;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #0b6bc8;
 }
 
 .btn {
