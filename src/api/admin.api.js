@@ -57,6 +57,26 @@ export const adminApi = {
   removeFromBlacklist: (userId) => {
     return apiClient.delete(`/admin/blacklist/${userId}`)
   },
+
+  // ===== User Management =====
+
+  /**
+   * Get all users with their blacklist status (admin only)
+   * @returns {Promise} Response with array of users
+   */
+  getAllUsers: () => {
+    return apiClient.get('/admin/users')
+  },
+
+  /**
+   * Update user role (admin only)
+   * @param {string} userId - User ID
+   * @param {number} role - New role number
+   * @returns {Promise} Response with message
+   */
+  updateUserRole: (userId, role) => {
+    return apiClient.put(`/admin/users/${userId}/role`, { role })
+  },
 }
 
 export default adminApi

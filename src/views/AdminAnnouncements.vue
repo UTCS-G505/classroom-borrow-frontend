@@ -191,12 +191,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import {
-  getAnnouncements,
-  createAnnouncement,
-  updateAnnouncement,
-  deleteAnnouncement,
-} from '../api/announcements'
+import { announcementsApi } from '../api/announcements.api'
 import { useToastStore } from '@/stores/toast'
 import dayjs from 'dayjs'
 
@@ -227,7 +222,7 @@ onMounted(() => {
 const fetchAnnouncements = async () => {
   loading.value = true
   try {
-    const res = await getAnnouncements()
+    const res = await announcementsApi.getAllAnnouncements()
     announcements.value = res.data
   } catch (err) {
     console.error(err)
@@ -287,10 +282,10 @@ const submitForm = async () => {
     }
 
     if (isEdit.value) {
-      await updateAnnouncement(currentId.value, payload)
+      await announcementsApi.updateAnnouncement(currentId.value, payload)
       toastStore.showToast('更新成功', 'success')
     } else {
-      await createAnnouncement(payload)
+      await announcementsApi.createAnnouncement(payload)
       toastStore.showToast('新增成功', 'success')
     }
     closeModal()
@@ -317,7 +312,7 @@ const confirmDelete = async () => {
   if (!deleteTarget.value) return
 
   try {
-    await deleteAnnouncement(deleteTarget.value.announcement_id)
+    await announcementsApi.deleteAnnouncement(deleteTarget.value.announcement_id)
     toastStore.showToast('刪除成功', 'success')
     fetchAnnouncements()
     closeDeleteModal()
