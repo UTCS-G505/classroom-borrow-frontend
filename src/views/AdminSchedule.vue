@@ -12,6 +12,63 @@ const isSubmitting = ref(false)
 const start_date = ref('')
 const end_date = ref('')
 
+const previewSchedules = ref([])
+const isPreviewing = ref(false)
+
+const previewTimeSlots = computed(() => {
+  if (!previewSchedules.value.length) return []
+
+  return [
+    { start: '08:10:00', end: '09:00:00' },
+    { start: '09:10:00', end: '10:00:00' },
+    { start: '10:10:00', end: '11:00:00' },
+    { start: '11:10:00', end: '12:00:00' },
+    { start: '12:10:00', end: '13:00:00' },
+    { start: '13:10:00', end: '14:00:00' },
+    { start: '14:10:00', end: '15:00:00' },
+    { start: '15:10:00', end: '16:00:00' },
+    { start: '16:10:00', end: '17:00:00' },
+    { start: '17:10:00', end: '18:00:00' },
+    { start: '18:10:00', end: '19:00:00' },
+    { start: '19:10:00', end: '20:00:00' },
+    { start: '20:10:00', end: '21:00:00' },
+    { start: '21:10:00', end: '22:00:00' },
+  ]
+})
+
+const getPreviewCell = (weekday, slot) => {
+  return previewSchedules.value.filter((s) => {
+    if (s.weekday !== weekday) return false
+    // Overlapping logic: course starts BEFORE slot ends, AND ends AFTER slot starts.
+    return s.start_time < slot.end && s.end_time > slot.start
+  })
+}
+
+const submitPreview = async () => {
+  isSubmitting.value = true
+  try {
+    await adminApi.importSchedule({
+      schedules: previewSchedules.value,
+      start_date: start_date.value,
+      end_date: end_date.value,
+    })
+    toastStore.showToast('課表匯入成功', 'success')
+    isPreviewing.value = false
+    previewSchedules.value = []
+    fetchSchedules()
+  } catch (err) {
+    console.error(err)
+    toastStore.showToast('匯入失敗，請確認檔案資料', 'error')
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+const cancelPreview = () => {
+  isPreviewing.value = false
+  previewSchedules.value = []
+}
+
 async function fetchSchedules() {
   isLoading.value = true
   try {
@@ -102,19 +159,12 @@ const handleFileUpload = (e) => {
         return
       }
 
-      isSubmitting.value = true
-      await adminApi.importSchedule({
-        schedules: parsedSchedules.filter((s) => s.classroom_id && s.course_name),
-        start_date: start_date.value,
-        end_date: end_date.value,
-      })
-      toastStore.showToast('課表匯入成功', 'success')
-      fetchSchedules()
+      previewSchedules.value = parsedSchedules.filter((s) => s.classroom_id && s.course_name)
+      isPreviewing.value = true
     } catch (err) {
       console.error(err)
-      toastStore.showToast('匯入失敗，請確認檔案格式', 'error')
+      toastStore.showToast('檔案解析失敗，請確認檔案格式', 'error')
     } finally {
-      isSubmitting.value = false
       e.target.value = ''
     }
   }
@@ -172,7 +222,7 @@ function getWeekdayName(num) {
         </button>
       </div>
 
-      <div class="import-section form-content">
+      <div v-if="!isPreviewing" class="import-section form-content">
         <h4 style="margin-bottom: 15px; color: #333">匯入新學期課表</h4>
         <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap">
           <div class="form-group">
@@ -199,6 +249,70 @@ function getWeekdayName(num) {
         <p style="font-size: 13px; color: #666; margin-top: 10px">
           如果上傳相同的學期區間，會自動覆蓋（更新）該學期的課表，不影響其他學期。
         </p>
+      </div>
+
+      <div v-else class="preview-section form-content">
+        <h4 style="margin-bottom: 15px; color: #333">
+          匯入預覽 ({{ start_date }} 至 {{ end_date }})
+        </h4>
+        <div class="table-container">
+          <table class="preview-table">
+            <thead>
+              <tr>
+                <th style="width: 80px"></th>
+                <th>一</th>
+                <th>二</th>
+                <th>三</th>
+                <th>四</th>
+                <th>五</th>
+                <th>六</th>
+                <th>日</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(slot, index) in previewTimeSlots" :key="index">
+                <td class="time-slot-cell">
+                  第 {{ index + 1 }} 節<br />
+                  <span style="font-size: 12px; color: #666">
+                    {{ slot.start.substring(0, 5).replace(':', '') }}-{{
+                      slot.end.substring(0, 5).replace(':', '')
+                    }}
+                  </span>
+                </td>
+                <td v-for="day in [1, 2, 3, 4, 5, 6, 0]" :key="day">
+                  <div
+                    v-for="course in getPreviewCell(day, slot)"
+                    :key="course.course_name + course.classroom_id"
+                    class="course-card"
+                  >
+                    <div class="course-name">{{ course.course_name }}</div>
+                    <div class="course-teacher">{{ course.teacher_name }}</div>
+                    <div class="course-classroom">{{ course.classroom_id }}</div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="preview-actions">
+          <button
+            class="btn"
+            style="background-color: #e2e8f0; color: #475569"
+            @click="cancelPreview"
+            :disabled="isSubmitting"
+          >
+            取消匯入
+          </button>
+          <button
+            class="btn"
+            style="background-color: #0b6bc8; color: white"
+            @click="submitPreview"
+            :disabled="isSubmitting"
+          >
+            <span v-if="isSubmitting">匯入中...</span>
+            <span v-else>確認匯入</span>
+          </button>
+        </div>
       </div>
 
       <!-- Schedule Table Grouped by Semester -->
@@ -364,12 +478,87 @@ tbody tr:hover {
   background: white;
 }
 
-.import-section {
+.import-section,
+.preview-section {
   margin-bottom: 25px;
   background: #f8f9fa;
   padding: 20px;
   border-radius: 8px;
   border-left: 4px solid #0b6bc8;
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 15px;
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+  min-width: 800px;
+  border: none;
+}
+.preview-table thead {
+  border: none;
+}
+.preview-table th,
+.preview-table td {
+  border: 1px solid #cbd5e1;
+  padding: 10px;
+  vertical-align: top;
+  text-align: left;
+}
+.preview-table th {
+  background-color: #f1f5f9;
+  text-align: center;
+  color: #475569;
+  font-weight: 600;
+  border-bottom: 1px solid #cbd5e1;
+}
+.preview-table td {
+  background-color: #fffdf5;
+  width: 13%;
+  border-bottom: 1px solid #cbd5e1;
+}
+.preview-table .time-slot-cell {
+  background-color: #f8f9fa;
+  text-align: center;
+  vertical-align: middle;
+  color: #555;
+  width: 80px;
+}
+.course-card {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #ccc;
+  line-height: 1.4;
+}
+.course-card:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.course-name {
+  color: #333;
+}
+.course-teacher {
+  color: #666;
+  font-size: 13px;
+}
+.course-classroom {
+  color: #666;
+  font-size: 13px;
+}
+
+.preview-actions {
+  margin-top: 15px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 .btn {
