@@ -4,11 +4,13 @@ import { ref } from 'vue'
 import BorrowReview from './BorrowReview.vue'
 import UserManagement from './UserManagement.vue'
 import AdminAnnouncements from './AdminAnnouncements.vue'
+import AdminSchedule from './AdminSchedule.vue'
 
 const links = [
   { label: '借用審核', id: 'borrow-review' },
   { label: '用戶管理(含黑名單)', id: 'user-management' },
   { label: '公告管理', id: 'announcements' },
+  { label: '課表管理', id: 'schedule-management' },
 ]
 
 //預設頁面
@@ -39,6 +41,7 @@ function changePage(id) {
       <BorrowReview v-if="page === 'borrow-review'" />
       <UserManagement v-else-if="page === 'user-management'" />
       <AdminAnnouncements v-else-if="page === 'announcements'" />
+      <AdminSchedule v-else-if="page === 'schedule-management'" />
     </section>
   </div>
 </template>

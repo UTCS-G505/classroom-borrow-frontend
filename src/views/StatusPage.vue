@@ -701,6 +701,12 @@ th.todayColumn::after {
   border-left: 3px solid #22c55e;
 }
 
+.event.course {
+  background-color: #ffedd5; /* light orange */
+  color: #c2410c;
+  border-left: 3px solid #f97316;
+}
+
 /* ===== 借用狀態說明 ===== */
 .statusLegend {
   display: flex;
