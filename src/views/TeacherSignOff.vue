@@ -43,10 +43,19 @@ const formattedBorrowTime = computed(() => {
   const eTime = end_time?.substring(0, 5)
 
   if (sDate === eDate) {
-    return `${sDate} <br /> ${sTime} - ${eTime}`
+    return `${sDate} ${sTime} - ${eTime}`
   } else {
-    return `${sDate} ${sTime} <br /> - <br /> ${eDate} ${eTime}`
+    return `${sDate} ${sTime} - ${eDate} ${eTime}`
   }
+})
+
+const formattedBorrowType = computed(() => {
+  if (!requestData.value) return ''
+  const { borrow_type, repeat_frequency } = requestData.value
+  if (borrow_type === '多次借用' && repeat_frequency) {
+    return `${borrow_type} (${repeat_frequency})`
+  }
+  return borrow_type
 })
 
 // API Functions
@@ -139,11 +148,11 @@ onMounted(async () => {
     <div v-else-if="requestData" class="content">
       <div class="row">
         <div class="col">
-          <label>活動名稱</label>
-          <div class="value">{{ requestData.event_name }}</div>
+          <label>申請人姓名</label>
+          <div class="value">{{ requestData.borrower_name || '未填寫' }}</div>
         </div>
         <div class="col">
-          <label>申請人 (Email)</label>
+          <label>申請人 Email</label>
           <div class="value">{{ requestData.borrower_email }}</div>
         </div>
       </div>
@@ -154,8 +163,36 @@ onMounted(async () => {
           <div class="value">{{ requestData.classroom_id }}</div>
         </div>
         <div class="col">
+          <label>活動名稱</label>
+          <div class="value">{{ requestData.event_name }}</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col full-width">
+          <label>活動內容</label>
+          <div class="value description">{{ requestData.reason || '未填寫' }}</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
           <label>借用時間</label>
-          <div class="value" v-html="formattedBorrowTime"></div>
+          <div class="value">{{ formattedBorrowTime }}</div>
+        </div>
+        <div class="col">
+          <label>借用類型</label>
+          <div class="value">{{ formattedBorrowType }}</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label>活動人數</label>
+          <div class="value">{{ requestData.people_count || '未填寫' }}</div>
+        </div>
+        <div class="col">
+          <!-- 空白區域保持版面一致性 -->
         </div>
       </div>
 
@@ -233,24 +270,42 @@ onMounted(async () => {
   display: flex;
   gap: 20px;
   margin-bottom: 20px;
-  flex-wrap: wrap;
 }
 .col {
-  flex: 1;
-  min-width: 200px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.col.full-width {
+  flex: 1 1 100%;
 }
 label {
   display: block;
   font-weight: bold;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   color: #666;
+  font-size: 14px;
+  height: 20px;
 }
 .value {
   background: #f8f9fa;
-  padding: 10px;
+  padding: 12px;
   border-radius: 4px;
   border: 1px solid #eee;
   color: #333;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.value.description {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  height: 60px;
+  overflow-y: auto;
+  align-items: flex-start;
 }
 .input-group {
   margin-top: 20px;
